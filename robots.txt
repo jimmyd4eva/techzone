@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jimmyd4eva.github.io/techzone/sitemap.xml
