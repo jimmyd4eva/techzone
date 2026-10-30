@@ -1,0 +1,9 @@
+{
+  "name": "techzone",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TechZone store website — static HTML, CSS and JavaScript.",
+  "scripts": {
+    "start": "npx --yes serve ."
+  }
+}
