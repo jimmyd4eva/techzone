@@ -1,0 +1,375 @@
+/* ---------- Local visual editing ---------- */
+
+.tzedit {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text);
+}
+
+.tzedit [hidden] {
+  display: none !important;
+}
+
+.tzedit-launch {
+  position: fixed;
+  right: clamp(14px, 2.2vw, 26px);
+  bottom: clamp(14px, 2.2vw, 26px);
+  z-index: 320;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.68rem 1rem;
+  border-radius: 100px;
+  border: 1px solid rgba(236, 61, 79, 0.5);
+  background: rgba(10, 11, 14, 0.9);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--logo-ivory, #f6f1e7);
+  font-size: 0.64rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.25s var(--ease), color 0.25s var(--ease),
+    transform 0.25s var(--ease), background-color 0.25s var(--ease);
+}
+
+.tzedit-launch svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent-bright);
+}
+
+.tzedit-launch:hover {
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
+  transform: translateY(-1px);
+}
+
+.tzedit-launch:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 3px;
+}
+
+.tzedit-panel {
+  position: fixed;
+  right: clamp(14px, 2.2vw, 26px);
+  bottom: clamp(14px, 2.2vw, 26px);
+  z-index: 321;
+  width: min(336px, calc(100vw - 28px));
+  padding: 1rem 1.05rem 0.95rem;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: rgba(9, 10, 13, 0.96);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.tzedit-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.tzedit-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+}
+
+.tzedit-panel__title::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(236, 61, 79, 0.16);
+}
+
+.tzedit-hint {
+  margin: 0 0 0.85rem;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.tzedit-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.tzedit-btn {
+  appearance: none;
+  padding: 0.56rem 0.85rem;
+  border-radius: 100px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease),
+    background-color 0.25s var(--ease);
+}
+
+.tzedit-btn:hover {
+  color: var(--accent-bright);
+  border-color: rgba(236, 61, 79, 0.55);
+}
+
+.tzedit-btn:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.tzedit-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #14100a;
+}
+
+.tzedit-btn--primary:hover {
+  background: var(--accent-bright);
+  border-color: var(--accent-bright);
+  color: #14100a;
+}
+
+.tzedit-btn--done {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.6rem;
+}
+
+.tzedit-btn--danger {
+  margin-left: auto;
+  color: var(--accent-bright);
+  border-color: rgba(236, 61, 79, 0.42);
+}
+
+.tzedit-btn--danger:hover {
+  background: rgba(236, 61, 79, 0.14);
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
+}
+
+.tzedit-status {
+  min-height: 1.1em;
+  margin: 0.7rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.tzedit-status[data-tone="ok"] {
+  color: var(--accent-bright);
+}
+
+html.tz-editing .tzedit-text {
+  cursor: text;
+  caret-color: var(--accent-bright);
+  border-radius: 2px;
+}
+
+html.tz-editing .tzedit-text:hover {
+  background: rgba(236, 61, 79, 0.07);
+  box-shadow: 0 0 0 1px rgba(236, 61, 79, 0.32);
+}
+
+html.tz-editing .tzedit-text:focus {
+  outline: 1px solid var(--accent-bright);
+  outline-offset: 4px;
+  background: rgba(236, 61, 79, 0.08);
+}
+
+html.tz-editing img {
+  cursor: pointer;
+}
+
+html.tz-editing img:hover {
+  outline: 3px solid rgba(236, 61, 79, 0.72);
+  outline-offset: -3px;
+}
+
+html.tz-editing a[href]:hover {
+  outline: 1px dashed rgba(236, 61, 79, 0.55);
+  outline-offset: 3px;
+}
+
+.tzedit-link-handle {
+  position: fixed;
+  z-index: 322;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 100px;
+  border: 1px solid rgba(236, 61, 79, 0.62);
+  background: rgba(12, 13, 17, 0.97);
+  color: var(--logo-ivory, #f6f1e7);
+  font-family: inherit;
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.tzedit-link-handle svg {
+  width: 11px;
+  height: 11px;
+  color: var(--accent-bright);
+}
+
+.tzedit-link-handle:hover,
+.tzedit-link-handle:focus-visible {
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
+  outline: none;
+}
+
+.tzedit-linkpop {
+  position: fixed;
+  z-index: 323;
+  width: min(320px, calc(100vw - 24px));
+  padding: 0.85rem 0.9rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(9, 10, 13, 0.98);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.tzedit-linkpop__label {
+  display: block;
+  margin-bottom: 0.42rem;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+}
+
+.tzedit-linkpop__input {
+  width: 100%;
+  padding: 0.52rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+}
+
+.tzedit-linkpop__input:focus {
+  outline: 1px solid var(--accent-bright);
+  outline-offset: 1px;
+  border-color: var(--accent-bright);
+}
+
+.tzedit-linkpop__hint {
+  margin: 0.45rem 0 0.7rem;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tzedit-linkpop__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tzedit-imgpop {
+  position: fixed;
+  z-index: 323;
+  width: min(300px, calc(100vw - 24px));
+  padding: 0.75rem 0.85rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(9, 10, 13, 0.98);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.tzedit-imgpop__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.tzedit-imgpop__thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tzedit-imgpop__title {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+}
+
+.tzedit-imgpop__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+html.tz-editing [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+html.tz-editing body {
+  padding-bottom: 260px;
+}
+
+.tzedit-panel:focus {
+  outline: none;
+}
+
+html:has(.mobile-menu.is-open) .tzedit-launch {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 620px) {
+  .tzedit-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    bottom: 12px;
+  }
+
+  .tzedit-launch {
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .tzedit-hint {
+    font-size: 0.73rem;
+  }
+}
