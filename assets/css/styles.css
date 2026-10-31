@@ -1290,8 +1290,8 @@ body.no-scroll {
 .rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: min(76vw, 340px);
-  gap: clamp(0.8rem, 1.6vw, 1.2rem);
+  grid-auto-columns: min(65vw, 280px);
+  gap: clamp(0.7rem, 1.2vw, 1rem);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;

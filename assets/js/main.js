@@ -413,6 +413,11 @@
     var next = scope.querySelector("[data-rail-next]");
     if (!prev || !next) return;
 
+    var AUTO_DELAY = 3800;
+    var autoTimer = null;
+    var inView = false;
+    var resumeTimer = null;
+
     function step() {
       var first = rail.firstElementChild;
       if (!first) return rail.clientWidth * 0.8;
@@ -433,6 +438,37 @@
       });
     }
 
+    function advance() {
+      var max = rail.scrollWidth - rail.clientWidth;
+      if (max <= 1) return;
+      if (rail.scrollLeft >= max - 2) {
+        rail.scrollTo({ left: 0, behavior: reduceMotion ? "auto" : "smooth" });
+      } else {
+        move(1);
+      }
+    }
+
+    function start() {
+      if (reduceMotion || autoTimer || !inView || document.hidden) return;
+      autoTimer = window.setInterval(advance, AUTO_DELAY);
+    }
+
+    function stop() {
+      if (autoTimer) {
+        window.clearInterval(autoTimer);
+        autoTimer = null;
+      }
+      if (resumeTimer) {
+        window.clearTimeout(resumeTimer);
+        resumeTimer = null;
+      }
+    }
+
+    function resumeSoon() {
+      stop();
+      resumeTimer = window.setTimeout(start, 6000);
+    }
+
     prev.addEventListener("click", function () {
       move(-1);
     });
@@ -442,6 +478,38 @@
     rail.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     update();
+
+    rail.addEventListener("pointerenter", stop);
+    rail.addEventListener("pointerleave", start);
+    rail.addEventListener("focusin", stop);
+    rail.addEventListener("focusout", start);
+    rail.addEventListener("pointerdown", stop);
+    rail.addEventListener("touchend", resumeSoon, { passive: true });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        stop();
+      } else {
+        start();
+      }
+    });
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        function (entries) {
+          inView = entries[0].isIntersecting;
+          if (inView) {
+            start();
+          } else {
+            stop();
+          }
+        },
+        { threshold: 0.35 }
+      ).observe(rail);
+    } else {
+      inView = true;
+      start();
+    }
   });
 
   /* ---------- Visitor counter ---------- */
