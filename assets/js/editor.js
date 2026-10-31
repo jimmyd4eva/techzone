@@ -38,11 +38,13 @@
       }
       location.reload();
     });
-    return;
   }
 
+  var canEdit = isLocal || remembered;
   var FILE = location.pathname.split("/").pop() || "index.html";
   var STORE_KEY = "techzone-edits:" + location.pathname;
+  var PASS_KEY = "techzone-publish-pass";
+  var PUBLISH_ENDPOINT = "api/publish.php";
   var SKIP = {
     HTML: 1, BODY: 1, MAIN: 1, HEADER: 1, FOOTER: 1, SECTION: 1, DIV: 1,
     NAV: 1, UL: 1, OL: 1, ARTICLE: 1, FORM: 1, TABLE: 1, THEAD: 1,
@@ -76,6 +78,11 @@
   var pendingImage = null;
   var saveTimer = null;
   var detailState = [];
+  var published = emptyState();
+  var publishedKnown = false;
+  var publishBusy = false;
+  var pendingPass = "";
+  var canPublish = location.protocol === "http:" || location.protocol === "https:";
 
   var ui, launchBtn, panel, statusEl, fileInput;
   var linkHandle, linkPop, linkInput, linkTarget = null;
@@ -196,6 +203,32 @@
     }
   }
 
+  function emptyState() {
+    return {
+      v: 2,
+      text: {},
+      images: {},
+      links: {},
+      removed: {},
+      removedImages: {}
+    };
+  }
+
+  function isObject(value) {
+    return !!value && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function normalize(data) {
+    var clean = emptyState();
+    if (!isObject(data)) return clean;
+    clean.text = isObject(data.text) ? data.text : {};
+    clean.images = isObject(data.images) ? data.images : {};
+    clean.links = isObject(data.links) ? data.links : {};
+    clean.removed = isObject(data.removed) ? data.removed : {};
+    clean.removedImages = isObject(data.removedImages) ? data.removedImages : {};
+    return clean;
+  }
+
   function migrateV1(saved) {
     if (
       saved.count !== textItems.length ||
@@ -236,67 +269,69 @@
     return migrated;
   }
 
-  function applySaved() {
-    var saved = readStore();
-    if (!saved) return;
-    if (saved.v !== 2) saved = migrateV1(saved);
-    if (!saved) return;
-
+  function applyData(data, track) {
     var textByKey = resolveByKey(textItems, textKeys);
     var imagesByKey = resolveByKey(imageItems, imageKeys);
     var linksByKey = resolveByKey(linkItems, linkKeys);
     var missing = 0;
 
-    edits.text = {};
-    edits.images = {};
-    edits.links = {};
-    edits.removed = {};
-    edits.removedImages = saved.removedImages || {};
-    skippedSaved = 0;
-
-    Object.keys(saved.text || {}).forEach(function (key) {
+    Object.keys(data.text || {}).forEach(function (key) {
       var el = textByKey.get(key);
       if (!el) {
         missing++;
         return;
       }
-      el.innerHTML = saved.text[key];
-      edits.text[key] = saved.text[key];
+      el.innerHTML = data.text[key];
+      if (track) edits.text[key] = data.text[key];
     });
 
-    Object.keys(saved.images || {}).forEach(function (key) {
+    Object.keys(data.images || {}).forEach(function (key) {
       var img = imagesByKey.get(key);
       if (!img) {
         missing++;
         return;
       }
       img.removeAttribute("srcset");
-      img.src = saved.images[key];
-      edits.images[key] = saved.images[key];
+      img.src = data.images[key];
+      if (track) edits.images[key] = data.images[key];
     });
 
-    Object.keys(edits.removedImages).forEach(function (key) {
+    Object.keys(data.removedImages || {}).forEach(function (key) {
       var img = imagesByKey.get(key);
       if (img && img.parentNode) removeImageElement(img);
+      if (track) edits.removedImages[key] = true;
     });
 
-    Object.keys(saved.links || {}).forEach(function (key) {
+    Object.keys(data.links || {}).forEach(function (key) {
       var link = linksByKey.get(key);
       if (!link) {
         missing++;
         return;
       }
-      link.setAttribute("href", saved.links[key]);
-      edits.links[key] = saved.links[key];
+      link.setAttribute("href", data.links[key]);
+      if (track) edits.links[key] = data.links[key];
     });
 
-    Object.keys(saved.removed || {}).forEach(function (key) {
+    Object.keys(data.removed || {}).forEach(function (key) {
       var link = linksByKey.get(key);
       if (link && link.parentNode) removeLinkElement(link);
-      edits.removed[key] = true;
+      if (track) edits.removed[key] = true;
     });
 
-    skippedSaved = missing;
+    return missing;
+  }
+
+  function applySaved(saved) {
+    if (!saved) return;
+    if (saved.v !== 2) saved = migrateV1(saved);
+    if (!saved) return;
+
+    edits.text = {};
+    edits.images = {};
+    edits.links = {};
+    edits.removed = {};
+    edits.removedImages = {};
+    skippedSaved = applyData(saved, true);
   }
 
   function persist() {
@@ -368,12 +403,14 @@
       '<span class="tzedit-panel__title">Editing</span>' +
       '<button class="tzedit-btn tzedit-btn--done" type="button" data-tzedit="done">Done</button>' +
       "</div>" +
-      '<p class="tzedit-hint">Click any text on this page to change it. Click a photo to replace or remove it. Hover a link and choose Link to change its address or remove it. Changes are kept in this browser only — use Save to file to write them into ' +
+      '<p class="tzedit-hint">Click any text on this page to change it. Click a photo to replace or remove it. Hover a link and choose Link to change its address or remove it. Changes stay in this browser until you press Publish — Publish updates the live site for every device. Save to file writes an HTML copy of ' +
       FILE +
-      ".</p>" +
+      " instead.</p>" +
       '<div class="tzedit-panel__actions">' +
-      '<button class="tzedit-btn tzedit-btn--primary" type="button" data-tzedit="save">Save to file</button>' +
+      '<button class="tzedit-btn tzedit-btn--primary" type="button" data-tzedit="publish">Publish</button>' +
+      '<button class="tzedit-btn" type="button" data-tzedit="save">Save to file</button>' +
       '<button class="tzedit-btn" type="button" data-tzedit="reset">Reset</button>' +
+      '<button class="tzedit-btn tzedit-btn--danger" type="button" data-tzedit="unpublish">Unpublish</button>' +
       "</div>" +
       '<p class="tzedit-status" role="status" aria-live="polite"></p>' +
       "</div>" +
@@ -423,7 +460,15 @@
       if (action === "done") exit();
       else if (action === "save") saveFile();
       else if (action === "reset") resetPage();
+      else if (action === "publish") publishPage();
+      else if (action === "unpublish") unpublishPage();
     });
+    if (!canPublish) {
+      var hidePublish = ui.querySelector('[data-tzedit="publish"]');
+      var hideUnpublish = ui.querySelector('[data-tzedit="unpublish"]');
+      if (hidePublish) hidePublish.hidden = true;
+      if (hideUnpublish) hideUnpublish.hidden = true;
+    }
     fileInput.addEventListener("change", onFilePicked);
 
     linkHandle.addEventListener("click", function (event) {
@@ -972,10 +1017,248 @@
     }, 4000);
   }
 
+  function withTimeout(promise, ms) {
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () {
+        reject(new Error("timeout"));
+      }, ms);
+      promise.then(
+        function (value) {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        function (err) {
+          clearTimeout(timer);
+          reject(err);
+        }
+      );
+    });
+  }
+
+  function loadPublished() {
+    if (!window.fetch) {
+      return Promise.reject(new Error("This browser cannot load published edits."));
+    }
+    return fetch(PUBLISH_ENDPOINT + "?page=" + encodeURIComponent(FILE), {
+      cache: "no-store",
+      credentials: "same-origin"
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("The site answered with " + response.status + ".");
+        }
+        return response.json();
+      })
+      .then(function (json) {
+        if (!json || !json.ok) {
+          throw new Error("The site sent an unexpected answer.");
+        }
+        published = normalize(json.edits);
+        publishedKnown = true;
+        return published;
+      });
+  }
+
+  function readPass() {
+    var saved = "";
+    try {
+      saved = localStorage.getItem(PASS_KEY) || "";
+    } catch (err) {
+      /* storage unavailable */
+    }
+    if (saved) return saved;
+    var entered = window.prompt(
+      "Enter the TechZone publish passphrase.\nIt is remembered on this device after a successful publish."
+    );
+    if (entered === null) return "";
+    pendingPass = entered.trim();
+    return pendingPass;
+  }
+
+  function keepPass() {
+    if (!pendingPass) return;
+    try {
+      localStorage.setItem(PASS_KEY, pendingPass);
+    } catch (err) {
+      /* storage unavailable */
+    }
+    pendingPass = "";
+  }
+
+  function forgetPass() {
+    pendingPass = "";
+    try {
+      localStorage.removeItem(PASS_KEY);
+    } catch (err) {
+      /* storage unavailable */
+    }
+  }
+
+  function mergeMap(base, local) {
+    var out = {};
+    Object.keys(base || {}).forEach(function (key) {
+      out[key] = base[key];
+    });
+    Object.keys(local || {}).forEach(function (key) {
+      out[key] = local[key];
+    });
+    return out;
+  }
+
+  function mergeForPublish() {
+    return {
+      text: mergeMap(published.text, edits.text),
+      images: mergeMap(published.images, edits.images),
+      links: mergeMap(published.links, edits.links),
+      removed: mergeMap(published.removed, edits.removed),
+      removedImages: mergeMap(published.removedImages, edits.removedImages)
+    };
+  }
+
+  function postPublish(body) {
+    return fetch(PUBLISH_ENDPOINT + "?page=" + encodeURIComponent(FILE), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(body)
+    }).then(function (response) {
+      return response
+        .json()
+        .catch(function () {
+          return {};
+        })
+        .then(function (json) {
+          if (!response.ok || !json.ok) {
+            var error = new Error(
+              json.error || "The site did not accept the changes. Please try again."
+            );
+            error.status = response.status;
+            throw error;
+          }
+          return json;
+        });
+    });
+  }
+
+  function setPublishBusy(busy) {
+    publishBusy = busy;
+    if (!panel) return;
+    var btn = panel.querySelector('[data-tzedit="publish"]');
+    if (btn) {
+      btn.disabled = busy;
+      btn.textContent = busy ? "Publishing…" : "Publish";
+    }
+  }
+
+  function clearLocalEdits() {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    edits.text = {};
+    edits.images = {};
+    edits.links = {};
+    edits.removed = {};
+    edits.removedImages = {};
+    try {
+      localStorage.removeItem(STORE_KEY);
+    } catch (err) {
+      /* storage unavailable */
+    }
+  }
+
+  function publishPage() {
+    if (!editing || publishBusy) return;
+    var pass = readPass();
+    if (!pass) {
+      setStatus("Publishing needs the passphrase.");
+      return;
+    }
+    setPublishBusy(true);
+    var ready = publishedKnown
+      ? Promise.resolve()
+      : loadPublished().catch(function () {
+          throw new Error(
+            "Could not load the current published edits. Try again in a moment."
+          );
+        });
+    if (!publishedKnown) setStatus("Checking the live site…");
+    ready
+      .then(function () {
+        setStatus("Publishing to the live site…");
+        return postPublish({
+          action: "publish",
+          page: FILE,
+          pass: pass,
+          edits: mergeForPublish()
+        });
+      })
+      .then(function (json) {
+        published = normalize(json.edits);
+        keepPass();
+        clearLocalEdits();
+        setPublishBusy(false);
+        setStatus("Published — open the site on your phone to check.", "ok");
+      })
+      .catch(function (err) {
+        setPublishBusy(false);
+        if (err && err.status === 401) {
+          forgetPass();
+          setStatus(
+            "Wrong passphrase — nothing was published. Press Publish to try again.",
+            "error"
+          );
+          return;
+        }
+        setStatus(
+          (err && err.message) ||
+            "Publish failed. Check the connection and try again.",
+          "error"
+        );
+      });
+  }
+
+  function unpublishPage() {
+    if (!editing || publishBusy) return;
+    if (
+      !window.confirm(
+        "Remove everything published for this page? Visitors will see the original page again, and unpublished changes in this browser are cleared too."
+      )
+    ) {
+      return;
+    }
+    var pass = readPass();
+    if (!pass) {
+      setStatus("Unpublishing needs the passphrase.");
+      return;
+    }
+    setPublishBusy(true);
+    setStatus("Removing published edits…");
+    postPublish({ action: "clear", page: FILE, pass: pass })
+      .then(function () {
+        published = emptyState();
+        clearLocalEdits();
+        location.reload();
+      })
+      .catch(function (err) {
+        setPublishBusy(false);
+        if (err && err.status === 401) {
+          forgetPass();
+          setStatus("Wrong passphrase — nothing was removed.", "error");
+          return;
+        }
+        setStatus(
+          (err && err.message) ||
+            "Unpublish failed. Check the connection and try again.",
+          "error"
+        );
+      });
+  }
+
   function resetPage() {
     if (
       !window.confirm(
-        "Discard all edits on this page? This clears changes saved in this browser. The HTML file itself is not changed."
+        "Discard changes saved in this browser? Published edits stay on the live site — use Unpublish to remove those."
       )
     ) {
       return;
@@ -1039,13 +1322,23 @@
     linkItems = collectLinks();
     assignKeys();
 
-    applySaved();
-    buildUI();
+    var saved = readStore();
 
-    window.addEventListener("pagehide", flushSave);
-    document.addEventListener("visibilitychange", function () {
-      if (document.hidden) flushSave();
-    });
+    withTimeout(loadPublished(), 5000)
+      .catch(function () {
+        publishedKnown = false;
+        return null;
+      })
+      .then(function (data) {
+        if (data) applyData(data, false);
+        if (!canEdit) return;
+        applySaved(saved);
+        buildUI();
+        window.addEventListener("pagehide", flushSave);
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden) flushSave();
+        });
+      });
   }
 
   if (document.readyState === "loading") {

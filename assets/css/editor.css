@@ -134,6 +134,23 @@
   outline-offset: 2px;
 }
 
+.tzedit-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.tzedit-btn:disabled:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: transparent;
+}
+
+.tzedit-btn--primary:disabled:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #14100a;
+}
+
 .tzedit-btn--primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -174,6 +191,11 @@
 
 .tzedit-status[data-tone="ok"] {
   color: var(--accent-bright);
+}
+
+.tzedit-status[data-tone="error"] {
+  color: var(--accent-bright);
+  font-weight: 600;
 }
 
 html.tz-editing .tzedit-text {
