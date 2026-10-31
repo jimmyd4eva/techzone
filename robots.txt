@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jimmyd4eva.github.io/techzone/sitemap.xml
+Sitemap: https://techzone4eva.store/sitemap.xml
