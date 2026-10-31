@@ -1238,6 +1238,94 @@ body.no-scroll {
   text-align: center;
 }
 
+/* ---------- Shop photo rail ---------- */
+
+.rail-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: clamp(1.8rem, 3vw, 2.6rem);
+}
+
+.rail-nav {
+  display: flex;
+  gap: 0.6rem;
+  padding-bottom: 0.3rem;
+}
+
+.rail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.3s var(--ease), color 0.3s var(--ease),
+    background-color 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+
+.rail-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.rail-btn:hover:not(:disabled) {
+  border-color: var(--accent-dim);
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+}
+
+.rail-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(76vw, 340px);
+  gap: clamp(0.8rem, 1.6vw, 1.2rem);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.4rem;
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.rail__item {
+  margin: 0;
+  scroll-snap-align: start;
+}
+
+.rail__item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--ink-900);
+}
+
+@media (max-width: 620px) {
+  .rail-btn {
+    width: 42px;
+    height: 42px;
+  }
+}
+
 .split__content {
   max-width: 520px;
 }

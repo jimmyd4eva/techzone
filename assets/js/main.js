@@ -405,6 +405,45 @@
     el.textContent = new Date().getFullYear();
   });
 
+  /* ---------- Shop photo rail ---------- */
+
+  document.querySelectorAll("[data-rail]").forEach(function (rail) {
+    var scope = rail.parentElement;
+    var prev = scope.querySelector("[data-rail-prev]");
+    var next = scope.querySelector("[data-rail-next]");
+    if (!prev || !next) return;
+
+    function step() {
+      var first = rail.firstElementChild;
+      if (!first) return rail.clientWidth * 0.8;
+      var gap = parseFloat(getComputedStyle(rail).columnGap) || 0;
+      return first.getBoundingClientRect().width + gap;
+    }
+
+    function update() {
+      var max = rail.scrollWidth - rail.clientWidth;
+      prev.disabled = rail.scrollLeft <= 1;
+      next.disabled = rail.scrollLeft >= max - 1;
+    }
+
+    function move(direction) {
+      rail.scrollBy({
+        left: direction * step(),
+        behavior: reduceMotion ? "auto" : "smooth"
+      });
+    }
+
+    prev.addEventListener("click", function () {
+      move(-1);
+    });
+    next.addEventListener("click", function () {
+      move(1);
+    });
+    rail.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  });
+
   /* ---------- Visitor counter ---------- */
 
   var visitCount = document.querySelector("[data-visit-count]");
