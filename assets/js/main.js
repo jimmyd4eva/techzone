@@ -413,7 +413,7 @@
     var next = scope.querySelector("[data-rail-next]");
     if (!prev || !next) return;
 
-    var AUTO_DELAY = 3800;
+    var AUTO_DELAY = reduceMotion ? 5200 : 3800;
     var autoTimer = null;
     var inView = false;
     var resumeTimer = null;
@@ -449,7 +449,7 @@
     }
 
     function start() {
-      if (reduceMotion || autoTimer || !inView || document.hidden) return;
+      if (autoTimer || !inView || document.hidden) return;
       autoTimer = window.setInterval(advance, AUTO_DELAY);
     }
 
