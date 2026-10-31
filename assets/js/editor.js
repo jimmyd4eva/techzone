@@ -1,13 +1,45 @@
 (function () {
   "use strict";
 
+  var EDIT_FLAG = "techzone-editor-on";
   var isLocal =
     location.protocol === "file:" ||
     location.hostname === "localhost" ||
     location.hostname === "127.0.0.1";
-  var hasEditParam = new URLSearchParams(location.search).has("edit");
+  var params = new URLSearchParams(location.search);
+  var editParam = params.has("edit") ? params.get("edit") : null;
+  var remembered = false;
 
-  if (!isLocal && !hasEditParam) return;
+  try {
+    remembered = localStorage.getItem(EDIT_FLAG) === "1";
+  } catch (err) {
+    /* storage unavailable */
+  }
+
+  if (editParam !== null) {
+    remembered = editParam !== "0";
+    try {
+      localStorage.setItem(EDIT_FLAG, remembered ? "1" : "0");
+    } catch (err) {
+      /* storage unavailable */
+    }
+  }
+
+  if (!isLocal && !remembered) {
+    // Ctrl+Shift+E turns editing on for this browser only.
+    document.addEventListener("keydown", function (event) {
+      if (!(event.ctrlKey || event.metaKey) || !event.shiftKey) return;
+      if (event.key.toLowerCase() !== "e") return;
+      event.preventDefault();
+      try {
+        localStorage.setItem(EDIT_FLAG, "1");
+      } catch (err) {
+        /* storage unavailable */
+      }
+      location.reload();
+    });
+    return;
+  }
 
   var FILE = location.pathname.split("/").pop() || "index.html";
   var STORE_KEY = "techzone-edits:" + location.pathname;
@@ -958,6 +990,21 @@
 
   document.addEventListener("keydown", function (event) {
     if (!editing) return;
+    if (
+      !isLocal &&
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key.toLowerCase() === "e"
+    ) {
+      event.preventDefault();
+      try {
+        localStorage.setItem(EDIT_FLAG, "0");
+      } catch (err) {
+        /* storage unavailable */
+      }
+      location.reload();
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
       event.preventDefault();
       saveFile();
