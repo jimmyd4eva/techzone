@@ -2,6 +2,7 @@
   "use strict";
 
   var EDIT_FLAG = "techzone-editor-on";
+  var HIDE_FLAG = "techzone-editor-hidden";
   var isLocal =
     location.protocol === "file:" ||
     location.hostname === "localhost" ||
@@ -9,9 +10,11 @@
   var params = new URLSearchParams(location.search);
   var editParam = params.has("edit") ? params.get("edit") : null;
   var remembered = false;
+  var editorHidden = false;
 
   try {
     remembered = localStorage.getItem(EDIT_FLAG) === "1";
+    editorHidden = localStorage.getItem(HIDE_FLAG) === "1";
   } catch (err) {
     /* storage unavailable */
   }
@@ -23,6 +26,14 @@
     } catch (err) {
       /* storage unavailable */
     }
+    if (remembered) {
+      editorHidden = false;
+      try {
+        localStorage.removeItem(HIDE_FLAG);
+      } catch (err) {
+        /* storage unavailable */
+      }
+    }
   }
 
   if (!isLocal && !remembered) {
@@ -33,6 +44,7 @@
       event.preventDefault();
       try {
         localStorage.setItem(EDIT_FLAG, "1");
+        localStorage.removeItem(HIDE_FLAG);
       } catch (err) {
         /* storage unavailable */
       }
@@ -440,9 +452,10 @@
       "</div></div>" +
       '<input class="tzedit-file" type="file" accept="image/*" hidden>';
     document.body.appendChild(ui);
-    document.documentElement.classList.add("has-editor");
+    if (!editorHidden) document.documentElement.classList.add("has-editor");
 
     launchBtn = ui.querySelector(".tzedit-launch");
+    if (editorHidden) launchBtn.hidden = true;
     panel = ui.querySelector(".tzedit-panel");
     statusEl = ui.querySelector(".tzedit-status");
     fileInput = ui.querySelector(".tzedit-file");
@@ -514,6 +527,7 @@
     if (editing) return;
     editing = true;
     document.documentElement.classList.add("tz-editing");
+    document.documentElement.classList.add("has-editor");
 
     textItems.forEach(function (el) {
       el.classList.add("tzedit-text");
@@ -579,6 +593,13 @@
     restoreDetails();
     panel.hidden = true;
     launchBtn.hidden = true;
+    editorHidden = true;
+    document.documentElement.classList.remove("has-editor");
+    try {
+      localStorage.setItem(HIDE_FLAG, "1");
+    } catch (err) {
+      /* storage unavailable */
+    }
     if (document.activeElement && document.activeElement.blur) {
       document.activeElement.blur();
     }
@@ -586,7 +607,14 @@
 
   function showLauncher() {
     if (!canEdit || editing || !launchBtn) return;
+    editorHidden = false;
+    try {
+      localStorage.removeItem(HIDE_FLAG);
+    } catch (err) {
+      /* storage unavailable */
+    }
     launchBtn.hidden = false;
+    document.documentElement.classList.add("has-editor");
     launchBtn.focus({ preventScroll: true });
   }
 
