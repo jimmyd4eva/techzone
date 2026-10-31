@@ -578,6 +578,14 @@
     hideLinkHandle(true);
     restoreDetails();
     panel.hidden = true;
+    launchBtn.hidden = true;
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
+  }
+
+  function showLauncher() {
+    if (!canEdit || editing || !launchBtn) return;
     launchBtn.hidden = false;
     launchBtn.focus({ preventScroll: true });
   }
@@ -1272,7 +1280,18 @@
   }
 
   document.addEventListener("keydown", function (event) {
-    if (!editing) return;
+    if (!editing) {
+      if (
+        canEdit &&
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.key.toLowerCase() === "e"
+      ) {
+        event.preventDefault();
+        showLauncher();
+      }
+      return;
+    }
     if (
       !isLocal &&
       (event.ctrlKey || event.metaKey) &&
