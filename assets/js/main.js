@@ -479,8 +479,6 @@
     window.addEventListener("resize", update);
     update();
 
-    rail.addEventListener("pointerenter", stop);
-    rail.addEventListener("pointerleave", start);
     rail.addEventListener("focusin", stop);
     rail.addEventListener("focusout", start);
     rail.addEventListener("pointerdown", stop);
