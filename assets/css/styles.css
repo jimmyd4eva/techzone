@@ -1238,69 +1238,33 @@ body.no-scroll {
   text-align: center;
 }
 
-/* ---------- Shop photo rail ---------- */
+/* ---------- Shop photo carousel ---------- */
 
-.rail-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-bottom: clamp(1.8rem, 3vw, 2.6rem);
-}
-
-.rail-nav {
-  display: flex;
-  gap: 0.6rem;
-  padding-bottom: 0.3rem;
-}
-
-.rail-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  padding: 0;
-  border: 1px solid var(--line-strong);
-  border-radius: 2px;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  transition: border-color 0.3s var(--ease), color 0.3s var(--ease),
-    background-color 0.3s var(--ease), opacity 0.3s var(--ease);
-}
-
-.rail-btn svg {
-  width: 17px;
-  height: 17px;
-}
-
-.rail-btn:hover:not(:disabled) {
-  border-color: var(--accent-dim);
-  color: var(--accent-bright);
-  background: var(--accent-soft);
-}
-
-.rail-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
+.rail-box {
+  position: relative;
+  justify-self: center;
+  width: 100%;
+  max-width: 480px;
 }
 
 .rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: min(65vw, 280px);
-  gap: clamp(0.7rem, 1.2vw, 1rem);
+  grid-auto-columns: 100%;
+  gap: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
-  padding-bottom: 0.4rem;
   scrollbar-width: none;
 }
 
 .rail::-webkit-scrollbar {
   display: none;
+}
+
+.rail:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 4px;
 }
 
 .rail__item {
@@ -1319,10 +1283,63 @@ body.no-scroll {
   background: var(--ink-900);
 }
 
+.rail-btn {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  background: rgba(7, 8, 10, 0.72);
+  backdrop-filter: blur(6px);
+  color: var(--text);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: border-color 0.3s var(--ease), color 0.3s var(--ease),
+    background-color 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+
+.rail-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.rail-btn--prev {
+  left: 12px;
+}
+
+.rail-btn--next {
+  right: 12px;
+}
+
+.rail-btn:hover:not(:disabled) {
+  border-color: var(--accent-dim);
+  color: var(--accent-bright);
+  background: rgba(7, 8, 10, 0.9);
+}
+
+.rail-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 @media (max-width: 620px) {
   .rail-btn {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .rail-btn--prev {
+    left: 8px;
+  }
+
+  .rail-btn--next {
+    right: 8px;
   }
 }
 

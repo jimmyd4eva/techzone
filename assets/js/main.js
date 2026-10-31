@@ -442,7 +442,7 @@
       var max = rail.scrollWidth - rail.clientWidth;
       if (max <= 1) return;
       if (rail.scrollLeft >= max - 2) {
-        rail.scrollTo({ left: 0, behavior: reduceMotion ? "auto" : "smooth" });
+        rail.scrollTo({ left: 0, behavior: "auto" });
       } else {
         move(1);
       }

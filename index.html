@@ -56,9 +56,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Inter:wght@300;400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=3">
+  <link rel="stylesheet" href="assets/css/styles.css?v=4">
   <link rel="stylesheet" href="assets/css/editor.css">
-  <script src="assets/js/main.js?v=3" defer></script>
+  <script src="assets/js/main.js?v=4" defer></script>
   <script src="assets/js/editor.js?v=2" defer></script>
 </head>
 <body data-page="home">
@@ -323,45 +323,43 @@
     </section>
 
     <section class="section section--bordered" id="shop-photos">
-      <div class="container">
-        <div class="rail-head" data-reveal>
-          <div class="section-head__text">
-            <p class="eyebrow">In the shop</p>
-            <h2>What's actually <em>on the shelves</em></h2>
-            <p class="lead">Cases, cables, watches, car audio, bags and more — straight from the shop floor.</p>
-          </div>
-          <div class="rail-nav">
-            <button class="rail-btn" type="button" data-rail-prev aria-label="Previous photos">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-            </button>
-            <button class="rail-btn" type="button" data-rail-next aria-label="Next photos">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </button>
-          </div>
+      <div class="container split">
+        <div class="split__content" data-reveal>
+          <p class="eyebrow">In the shop</p>
+          <h2>What's actually <em>on the shelves</em></h2>
+          <p class="lead">Cases, cables, watches, car audio, bags and more — straight from the shop floor.</p>
         </div>
 
-        <div class="rail" data-rail role="group" aria-label="Photos from inside the TechZone shop" tabindex="0">
-          <figure class="rail__item">
-            <img src="assets/img/shop/shop-01.jpg?v=2" alt="Glass display cabinet of boxed fragrances and electronics" width="800" height="800" loading="lazy" decoding="async">
-          </figure>
-          <figure class="rail__item">
-            <img src="assets/img/shop/shop-02.jpg?v=2" alt="Car stereo players, HD antennas and boxed accessories on a glass shelf" width="800" height="800" loading="lazy" decoding="async">
-          </figure>
-          <figure class="rail__item">
-            <img src="assets/img/shop/shop-03.jpg?v=2" alt="Stainless steel tumblers, mugs and footwear on display" width="800" height="800" loading="lazy" decoding="async">
-          </figure>
-          <figure class="rail__item">
-            <img src="assets/img/shop/shop-04.jpg?v=2" alt="Smart watch, HDMI cables and solar LED lights in their boxes" width="800" height="800" loading="lazy" decoding="async">
-          </figure>
-          <figure class="rail__item">
-            <img src="assets/img/shop/shop-05.jpg?v=2" alt="Wall display of phone cases above a table of sneakers" width="800" height="800" loading="lazy" decoding="async">
-          </figure>
-          <figure class="rail__item">
-            <img src="assets/img/shop/shop-06.jpg?v=2" alt="Tote bags and sneakers on a slatwall above laptops and a printer" width="800" height="800" loading="lazy" decoding="async">
-          </figure>
-          <figure class="rail__item">
-            <img src="assets/img/shop/shop-07.jpg?v=2" alt="Dash cams, car monitors and rear-view camera kits on a shelf" width="800" height="800" loading="lazy" decoding="async">
-          </figure>
+        <div class="rail-box" data-reveal>
+          <div class="rail" data-rail role="group" aria-label="Photos from inside the TechZone shop" tabindex="0">
+            <figure class="rail__item">
+              <img src="assets/img/shop/shop-01.jpg?v=2" alt="Glass display cabinet of boxed fragrances and electronics" width="800" height="800" loading="lazy" decoding="async">
+            </figure>
+            <figure class="rail__item">
+              <img src="assets/img/shop/shop-02.jpg?v=2" alt="Car stereo players, HD antennas and boxed accessories on a glass shelf" width="800" height="800" loading="lazy" decoding="async">
+            </figure>
+            <figure class="rail__item">
+              <img src="assets/img/shop/shop-03.jpg?v=2" alt="Stainless steel tumblers, mugs and footwear on display" width="800" height="800" loading="lazy" decoding="async">
+            </figure>
+            <figure class="rail__item">
+              <img src="assets/img/shop/shop-04.jpg?v=2" alt="Smart watch, HDMI cables and solar LED lights in their boxes" width="800" height="800" loading="lazy" decoding="async">
+            </figure>
+            <figure class="rail__item">
+              <img src="assets/img/shop/shop-05.jpg?v=2" alt="Wall display of phone cases above a table of sneakers" width="800" height="800" loading="lazy" decoding="async">
+            </figure>
+            <figure class="rail__item">
+              <img src="assets/img/shop/shop-06.jpg?v=2" alt="Tote bags and sneakers on a slatwall above laptops and a printer" width="800" height="800" loading="lazy" decoding="async">
+            </figure>
+            <figure class="rail__item">
+              <img src="assets/img/shop/shop-07.jpg?v=2" alt="Dash cams, car monitors and rear-view camera kits on a shelf" width="800" height="800" loading="lazy" decoding="async">
+            </figure>
+          </div>
+          <button class="rail-btn rail-btn--prev" type="button" data-rail-prev aria-label="Previous photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="rail-btn rail-btn--next" type="button" data-rail-next aria-label="Next photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
         </div>
       </div>
     </section>
