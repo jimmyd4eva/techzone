@@ -9,6 +9,8 @@ declare(strict_types=1);
   POST api/publish.php                   → {action:"clear", page, pass}
 */
 
+require __DIR__ . '/media-storage.php';
+
 ini_set('display_errors', '0');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, max-age=0');
@@ -255,20 +257,45 @@ function store_image(string $dataUrl, string $base, string $key, string $imgDir)
     return 'api/media.php?f=' . $name;
 }
 
-function resolve_stored_image(string $src, string $imgDir, string $oldImgDir): ?string
+function stored_name(string $src): ?string
 {
-    if (preg_match('#^api/media\.php\?f=([A-Za-z0-9][A-Za-z0-9._-]*)$#', $src, $m)) {
-        return is_file($imgDir . '/' . $m[1]) ? 'api/media.php?f=' . $m[1] : null;
+    return preg_match('#^api/media\.php\?f=([A-Za-z0-9][A-Za-z0-9._-]*)$#', $src, $m)
+        ? $m[1]
+        : null;
+}
+
+function restore_image(string $name, string $imgDir, string $backupDir): bool
+{
+    if ($backupDir === '' || !is_file($backupDir . '/' . $name)) {
+        return false;
+    }
+    ensure_dir($imgDir);
+    if (!@copy($backupDir . '/' . $name, $imgDir . '/' . $name)) {
+        return false;
+    }
+    @chmod($imgDir . '/' . $name, 0644);
+    return true;
+}
+
+function resolve_stored_image(string $src, string $imgDir, string $oldImgDir, string $backupDir): ?string
+{
+    $name = stored_name($src);
+    if ($name !== null) {
+        if (is_file($imgDir . '/' . $name) || restore_image($name, $imgDir, $backupDir)) {
+            return 'api/media.php?f=' . $name;
+        }
+        return null;
     }
     if (preg_match('#^assets/img/published/([A-Za-z0-9][A-Za-z0-9._-]*)$#', $src, $m)) {
-        if (is_file($imgDir . '/' . $m[1])) {
-            return 'api/media.php?f=' . $m[1];
+        $name = $m[1];
+        if (is_file($imgDir . '/' . $name) || restore_image($name, $imgDir, $backupDir)) {
+            return 'api/media.php?f=' . $name;
         }
-        if (is_file($oldImgDir . '/' . $m[1])) {
+        if (is_file($oldImgDir . '/' . $name)) {
             ensure_dir($imgDir);
-            if (@copy($oldImgDir . '/' . $m[1], $imgDir . '/' . $m[1])) {
-                @chmod($imgDir . '/' . $m[1], 0644);
-                return 'api/media.php?f=' . $m[1];
+            if (@copy($oldImgDir . '/' . $name, $imgDir . '/' . $name)) {
+                @chmod($imgDir . '/' . $name, 0644);
+                return 'api/media.php?f=' . $name;
             }
         }
         return null;
@@ -283,7 +310,43 @@ function resolve_stored_image(string $src, string $imgDir, string $oldImgDir): ?
     return null;
 }
 
-function clean_image_map($value, string $base, string $imgDir, string $oldImgDir): array
+function mirror_images(array $edits, string $imgDir, string $backupDir): void
+{
+    if ($backupDir === '') {
+        return;
+    }
+    $names = [];
+    foreach (($edits['images'] ?? []) as $src) {
+        $name = is_string($src) ? stored_name($src) : null;
+        if ($name !== null) {
+            $names[$name] = true;
+        }
+    }
+    foreach (($edits['products'] ?? []) as $product) {
+        if (!is_array($product) || !isset($product['image']) || !is_string($product['image'])) {
+            continue;
+        }
+        $name = stored_name($product['image']);
+        if ($name !== null) {
+            $names[$name] = true;
+        }
+    }
+    foreach (array_keys($names) as $name) {
+        $from = $imgDir . '/' . $name;
+        $to = $backupDir . '/' . $name;
+        if (!is_file($from)) {
+            continue;
+        }
+        if (is_file($to) && filesize($to) === filesize($from)) {
+            continue;
+        }
+        if (@copy($from, $to)) {
+            @chmod($to, 0644);
+        }
+    }
+}
+
+function clean_image_map($value, string $base, string $imgDir, string $oldImgDir, string $backupDir): array
 {
     if (!is_array($value)) {
         return [];
@@ -301,7 +364,7 @@ function clean_image_map($value, string $base, string $imgDir, string $oldImgDir
             }
             $src = $stored;
         } else {
-            $kept = resolve_stored_image($src, $imgDir, $oldImgDir);
+            $kept = resolve_stored_image($src, $imgDir, $oldImgDir, $backupDir);
             if ($kept === null) {
                 continue;
             }
@@ -315,7 +378,7 @@ function clean_image_map($value, string $base, string $imgDir, string $oldImgDir
     return $out;
 }
 
-function clean_product_list($value, string $base, string $imgDir, string $oldImgDir): array
+function clean_product_list($value, string $base, string $imgDir, string $oldImgDir, string $backupDir): array
 {
     if (!is_array($value)) {
         return [];
@@ -371,7 +434,7 @@ function clean_product_list($value, string $base, string $imgDir, string $oldImg
                 $stored = store_image($src, $base . '-p', $id, $imgDir);
                 $image = $stored === null ? '' : $stored;
             } else {
-                $image = resolve_stored_image($src, $imgDir, $oldImgDir) ?? '';
+                $image = resolve_stored_image($src, $imgDir, $oldImgDir, $backupDir) ?? '';
             }
         }
         $seen[$id] = true;
@@ -492,17 +555,19 @@ if ($incoming === null) {
     fail(400, 'No edits were sent.');
 }
 
+$backupDir = media_backup_dir($root, true);
+
 $edits = [
     'v' => 1,
     'page' => $page,
     'updated' => gmdate('c'),
     'text' => clean_text_map($incoming['text'] ?? []),
-    'images' => clean_image_map($incoming['images'] ?? [], $base, $imgDir, $oldImgDir),
+    'images' => clean_image_map($incoming['images'] ?? [], $base, $imgDir, $oldImgDir, $backupDir),
     'links' => clean_link_map($incoming['links'] ?? []),
     'removed' => clean_removed_map($incoming['removed'] ?? []),
     'removedImages' => clean_removed_map($incoming['removedImages'] ?? []),
     'products' => $page === 'shop.html'
-        ? clean_product_list($incoming['products'] ?? [], $base, $imgDir, $oldImgDir)
+        ? clean_product_list($incoming['products'] ?? [], $base, $imgDir, $oldImgDir, $backupDir)
         : [],
 ];
 
@@ -510,4 +575,5 @@ write_json($file, $edits);
 if ($page === 'shop.html') {
     clean_unused_product_images($edits['products'], $base, $imgDir);
 }
+mirror_images($edits, $imgDir, $backupDir);
 respond(200, ['ok' => true, 'page' => $page, 'edits' => $edits]);
