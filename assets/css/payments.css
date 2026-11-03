@@ -1,0 +1,256 @@
+/* ==========================================================================
+   TechZone — software checkout
+   ========================================================================== */
+
+.software-card__buy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.2rem;
+  margin-top: 1.3rem;
+}
+
+.software-card__buy-row .software-card__cta {
+  margin-top: 0;
+}
+
+.software-card__buy-row .software-card__cta svg {
+  width: 13px;
+  height: 13px;
+}
+
+html.pay-open,
+html.pay-open body {
+  overflow: hidden;
+}
+
+/* ---------- Checkout dialog ---------- */
+
+.pay {
+  width: min(460px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--ink-900);
+  color: var(--text);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.65);
+}
+
+.pay::backdrop {
+  background: rgba(4, 5, 8, 0.74);
+  backdrop-filter: blur(5px);
+}
+
+.pay[open] {
+  animation: pay-in 0.28s var(--ease);
+}
+
+@keyframes pay-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+
+.pay__panel {
+  position: relative;
+  padding: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.pay__close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+.pay__close:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent-bright);
+}
+
+.pay__eyebrow {
+  padding-right: 2.5rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.pay__title {
+  margin-top: 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3vw, 2.05rem);
+  font-weight: 300;
+  line-height: 1.15;
+}
+
+.pay__price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.8rem;
+  margin-top: 0.6rem;
+  color: var(--muted-dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.pay__price strong {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--accent-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.pay__methods {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.7rem;
+}
+
+.pay__method {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.02);
+  transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.pay__method-name {
+  grid-column: 1;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pay__method-note {
+  grid-column: 1;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--muted-dim);
+}
+
+.pay__method svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 16px;
+  height: 16px;
+}
+
+.pay__method--paypal {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--ink-950);
+}
+
+.pay__method--paypal .pay__method-note {
+  color: rgba(7, 8, 10, 0.72);
+}
+
+.pay__method--paypal:hover {
+  border-color: var(--accent-bright);
+  background: var(--accent-bright);
+}
+
+.pay__method:not(.pay__method--paypal):hover {
+  border-color: rgba(236, 61, 79, 0.45);
+  background: var(--accent-soft);
+}
+
+.pay__note {
+  margin-top: 1.5rem;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.pay__fineprint {
+  margin-top: 0.9rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  color: var(--muted-dim);
+}
+
+/* ---------- Post-payment prompt ---------- */
+
+.pay-done {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 120;
+  width: min(390px, calc(100vw - 2rem));
+  padding: 1.1rem 3rem 1.1rem 1.2rem;
+  border: 1px solid rgba(236, 61, 79, 0.5);
+  border-radius: var(--radius);
+  background: linear-gradient(160deg, rgba(236, 61, 79, 0.14), transparent 60%), var(--ink-850);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  animation: pay-in 0.3s var(--ease);
+}
+
+.pay-done__text {
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.pay-done__text strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+}
+
+.pay-done .btn {
+  margin-top: 0.8rem;
+}
+
+.pay-done__close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pay-done__close:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent-bright);
+}

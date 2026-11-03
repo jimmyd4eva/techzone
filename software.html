@@ -16,9 +16,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Inter:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/payments.css?v=1">
   <link rel="stylesheet" href="assets/css/editor.css?v=2">
   <script src="assets/js/main.js" defer></script>
   <script src="assets/js/editor.js?v=5" defer></script>
+  <script src="assets/js/payments.js?v=1" defer></script>
 </head>
 <body data-page="software">
 
@@ -90,7 +92,7 @@
           </div>
         </div>
 
-        <p class="software-coming" data-reveal>Coming soon</p>
+        <p class="software-coming" data-reveal>Licences available now</p>
 
         <div class="software-grid">
 
@@ -105,10 +107,13 @@
               <span class="software-card__price">$24</span>
               <span>One-time licence</span>
             </div>
-            <a class="software-card__cta" href="contact.html?topic=other">
-              Ask about Archive
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </a>
+            <div class="software-card__buy-row">
+              <button class="btn btn--primary btn--sm" type="button" data-buy>Buy licence</button>
+              <a class="software-card__cta" href="contact.html?topic=other">
+                Ask about Archive
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            </div>
           </article>
 
           <article class="software-card" data-reveal data-reveal-delay="70">
@@ -139,10 +144,13 @@
               <span class="software-card__price">$15</span>
               <span>One-time licence</span>
             </div>
-            <a class="software-card__cta" href="contact.html?topic=other">
-              Ask about Keyline
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            </a>
+            <div class="software-card__buy-row">
+              <button class="btn btn--primary btn--sm" type="button" data-buy>Buy licence</button>
+              <a class="software-card__cta" href="contact.html?topic=other">
+                Ask about Keyline
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            </div>
           </article>
 
         </div>
