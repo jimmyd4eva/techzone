@@ -513,6 +513,10 @@ html.tz-editing .tzprod-edit:focus-visible {
   font-size: 0.58rem;
 }
 
+.tzprod__photo-actions .tzedit-btn--danger {
+  margin-left: auto;
+}
+
 .tzprod__hint {
   flex-basis: 100%;
   margin: 0;
@@ -615,6 +619,10 @@ html.tz-editing .tzprod-edit:focus-visible {
 
   .tzprod__photo {
     align-items: flex-start;
+  }
+
+  .tzprod__photo-actions .tzedit-btn--danger {
+    margin-left: 0;
   }
 }
 

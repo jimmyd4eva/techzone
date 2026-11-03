@@ -81,6 +81,7 @@
   var productForm = null;
   var productEditId = "";
   var productPhoto = "";
+  var productOrigPhoto = "";
   var productStatusEl = null;
   var productThumbEl = null;
   var productFileInput = null;
@@ -1341,7 +1342,8 @@
   function renderProductThumb() {
     if (!productThumbEl) return;
     productThumbEl.innerHTML = "";
-    if (productPhoto) {
+    var hasPhoto = !!productPhoto;
+    if (hasPhoto) {
       var img = document.createElement("img");
       img.src = productPhoto;
       img.alt = "Product photo";
@@ -1350,6 +1352,20 @@
       var span = document.createElement("span");
       span.textContent = "+";
       productThumbEl.appendChild(span);
+    }
+    if (productDialog) {
+      var photoBtn = productDialog.querySelector('[data-tzprod="photo"]');
+      var cancelBtn = productDialog.querySelector('[data-tzprod="cancel-photo"]');
+      var removeBtn = productDialog.querySelector('[data-tzprod="nophoto"]');
+      if (photoBtn) {
+        photoBtn.textContent = hasPhoto ? "Replace" : "Choose photo";
+        photoBtn.setAttribute(
+          "aria-label",
+          hasPhoto ? "Replace product photo" : "Choose product photo"
+        );
+      }
+      if (cancelBtn) cancelBtn.hidden = !hasPhoto;
+      if (removeBtn) removeBtn.hidden = !hasPhoto;
     }
   }
 
@@ -1369,8 +1385,9 @@
       '<div class="tzprod__photo">' +
       '<div class="tzprod__thumb" data-tzprod-thumb><span>+</span></div>' +
       '<div class="tzprod__photo-actions">' +
-      '<button class="tzedit-btn" type="button" data-tzprod="photo">Choose photo</button> ' +
-      '<button class="tzedit-btn" type="button" data-tzprod="nophoto">No photo</button>' +
+      '<button class="tzedit-btn tzedit-btn--primary" type="button" data-tzprod="photo">Choose photo</button> ' +
+      '<button class="tzedit-btn" type="button" data-tzprod="cancel-photo" hidden>Cancel</button> ' +
+      '<button class="tzedit-btn tzedit-btn--danger" type="button" data-tzprod="nophoto" hidden>Remove</button> ' +
       '<p class="tzprod__hint">JPG, PNG or WebP. Photos are resized automatically.</p>' +
       "</div>" +
       '<input type="file" accept="image/*" data-tzprod-file hidden>' +
@@ -1413,15 +1430,18 @@
       var action = btn.getAttribute("data-tzprod");
       if (action === "close") closeProductDialog();
       else if (action === "photo") productFileInput.click();
-      else if (action === "nophoto") {
+      else if (action === "cancel-photo") {
+        productPhoto = productOrigPhoto;
+        renderProductThumb();
+        setProductStatus("Photo change cancelled.");
+      } else if (action === "nophoto") {
         productPhoto = "";
         renderProductThumb();
+        setProductStatus("Photo removed — save the product to apply it.");
       } else if (action === "remove") removeProduct();
     });
 
     productDialog.addEventListener("close", function () {
-      productEditId = "";
-      productPhoto = "";
       setProductStatus("");
     });
 
@@ -1453,6 +1473,7 @@
     var product = id ? findAddedProduct(id) : null;
     productEditId = product ? product.id : "";
     productPhoto = product ? product.image : "";
+    productOrigPhoto = productPhoto;
     productForm.reset();
     productForm.elements.name.value = product ? product.name : "";
     productForm.elements.price.value = product ? String(product.price) : "";
