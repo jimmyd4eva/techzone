@@ -320,6 +320,9 @@
       img.width = 64;
       img.height = 64;
       img.loading = "lazy";
+      img.addEventListener("error", function () {
+        if (img.parentNode === media) media.removeChild(img);
+      });
       media.appendChild(img);
     }
     li.appendChild(media);

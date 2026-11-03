@@ -29,7 +29,8 @@ const THROTTLE_WINDOW = 600;
 
 $root = dirname(__DIR__);
 $dataDir = $root . '/data/published';
-$imgDir = $root . '/assets/img/published';
+$imgDir = $dataDir . '/img';
+$oldImgDir = $root . '/assets/img/published';
 
 function respond(int $status, array $payload): void
 {
@@ -251,10 +252,38 @@ function store_image(string $dataUrl, string $base, string $key, string $imgDir)
         fail(500, 'A replacement photo could not be saved.');
     }
     @chmod($imgDir . '/' . $name, 0644);
-    return 'assets/img/published/' . $name;
+    return 'api/media.php?f=' . $name;
 }
 
-function clean_image_map($value, string $base, string $imgDir): array
+function resolve_stored_image(string $src, string $imgDir, string $oldImgDir): ?string
+{
+    if (preg_match('#^api/media\.php\?f=([A-Za-z0-9][A-Za-z0-9._-]*)$#', $src, $m)) {
+        return is_file($imgDir . '/' . $m[1]) ? 'api/media.php?f=' . $m[1] : null;
+    }
+    if (preg_match('#^assets/img/published/([A-Za-z0-9][A-Za-z0-9._-]*)$#', $src, $m)) {
+        if (is_file($imgDir . '/' . $m[1])) {
+            return 'api/media.php?f=' . $m[1];
+        }
+        if (is_file($oldImgDir . '/' . $m[1])) {
+            ensure_dir($imgDir);
+            if (@copy($oldImgDir . '/' . $m[1], $imgDir . '/' . $m[1])) {
+                @chmod($imgDir . '/' . $m[1], 0644);
+                return 'api/media.php?f=' . $m[1];
+            }
+        }
+        return null;
+    }
+    if (
+        strlen($src) <= 500 &&
+        strpos($src, '..') === false &&
+        preg_match('#^[A-Za-z0-9][A-Za-z0-9._~\-/]*$#', $src)
+    ) {
+        return $src;
+    }
+    return null;
+}
+
+function clean_image_map($value, string $base, string $imgDir, string $oldImgDir): array
 {
     if (!is_array($value)) {
         return [];
@@ -271,12 +300,12 @@ function clean_image_map($value, string $base, string $imgDir): array
                 fail(422, 'That photo could not be included. Use a JPG, PNG, WebP or GIF under 3 MB.');
             }
             $src = $stored;
-        } elseif (
-            strlen($src) > 500 ||
-            strpos($src, '..') !== false ||
-            !preg_match('#^[A-Za-z0-9][A-Za-z0-9._~\-/]*$#', $src)
-        ) {
-            continue;
+        } else {
+            $kept = resolve_stored_image($src, $imgDir, $oldImgDir);
+            if ($kept === null) {
+                continue;
+            }
+            $src = $kept;
         }
         $out[$key] = $src;
         if (++$count >= MAX_ENTRIES) {
@@ -286,7 +315,7 @@ function clean_image_map($value, string $base, string $imgDir): array
     return $out;
 }
 
-function clean_product_list($value, string $base, string $imgDir): array
+function clean_product_list($value, string $base, string $imgDir, string $oldImgDir): array
 {
     if (!is_array($value)) {
         return [];
@@ -341,12 +370,8 @@ function clean_product_list($value, string $base, string $imgDir): array
             if (strpos($src, 'data:image/') === 0) {
                 $stored = store_image($src, $base . '-p', $id, $imgDir);
                 $image = $stored === null ? '' : $stored;
-            } elseif (
-                strlen($src) <= 500 &&
-                strpos($src, '..') === false &&
-                preg_match('#^[A-Za-z0-9][A-Za-z0-9._~\-/]*$#', $src)
-            ) {
-                $image = $src;
+            } else {
+                $image = resolve_stored_image($src, $imgDir, $oldImgDir) ?? '';
             }
         }
         $seen[$id] = true;
@@ -368,7 +393,12 @@ function clean_unused_product_images(array $products, string $base, string $imgD
 {
     $keep = [];
     foreach ($products as $product) {
-        if (isset($product['image']) && is_string($product['image']) && $product['image'] !== '') {
+        if (!isset($product['image']) || !is_string($product['image']) || $product['image'] === '') {
+            continue;
+        }
+        if (preg_match('#^api/media\.php\?f=([A-Za-z0-9][A-Za-z0-9._-]*)$#', $product['image'], $m)) {
+            $keep[$m[1]] = true;
+        } else {
             $keep[basename($product['image'])] = true;
         }
     }
@@ -443,9 +473,11 @@ if ($action === 'clear') {
     if (is_file($file)) {
         @unlink($file);
     }
-    foreach (glob($imgDir . '/' . $base . '-*') ?: [] as $old) {
-        if (is_file($old)) {
-            @unlink($old);
+    foreach ([$imgDir, $oldImgDir] as $dir) {
+        foreach (glob($dir . '/' . $base . '-*') ?: [] as $old) {
+            if (is_file($old)) {
+                @unlink($old);
+            }
         }
     }
     respond(200, ['ok' => true, 'page' => $page, 'cleared' => true]);
@@ -465,12 +497,12 @@ $edits = [
     'page' => $page,
     'updated' => gmdate('c'),
     'text' => clean_text_map($incoming['text'] ?? []),
-    'images' => clean_image_map($incoming['images'] ?? [], $base, $imgDir),
+    'images' => clean_image_map($incoming['images'] ?? [], $base, $imgDir, $oldImgDir),
     'links' => clean_link_map($incoming['links'] ?? []),
     'removed' => clean_removed_map($incoming['removed'] ?? []),
     'removedImages' => clean_removed_map($incoming['removedImages'] ?? []),
     'products' => $page === 'shop.html'
-        ? clean_product_list($incoming['products'] ?? [], $base, $imgDir)
+        ? clean_product_list($incoming['products'] ?? [], $base, $imgDir, $oldImgDir)
         : [],
 ];
 

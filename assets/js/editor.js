@@ -1185,6 +1185,7 @@
       if (
         image &&
         image.indexOf("data:image/") !== 0 &&
+        !/^api\/media\.php\?f=[A-Za-z0-9][A-Za-z0-9._-]*$/.test(image) &&
         !/^[A-Za-z0-9][A-Za-z0-9._~\-/]*$/.test(image)
       ) {
         image = "";
@@ -1242,6 +1243,13 @@
     media.className = "product-card__media";
     media.setAttribute("href", product.href);
     media.setAttribute("aria-label", "Enquire about " + product.name);
+    function showPlaceholder() {
+      media.className += " product-card__media--placeholder";
+      var initial = document.createElement("span");
+      initial.setAttribute("aria-hidden", "true");
+      initial.textContent = product.name.charAt(0).toUpperCase();
+      media.appendChild(initial);
+    }
     if (product.image) {
       var img = document.createElement("img");
       img.src = product.image;
@@ -1249,13 +1257,14 @@
       img.width = 900;
       img.height = 900;
       img.loading = "lazy";
+      img.addEventListener("error", function () {
+        if (img.parentNode !== media) return;
+        media.removeChild(img);
+        showPlaceholder();
+      });
       media.appendChild(img);
     } else {
-      media.className += " product-card__media--placeholder";
-      var initial = document.createElement("span");
-      initial.setAttribute("aria-hidden", "true");
-      initial.textContent = product.name.charAt(0).toUpperCase();
-      media.appendChild(initial);
+      showPlaceholder();
     }
     card.appendChild(media);
 
