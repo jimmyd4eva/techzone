@@ -56,8 +56,34 @@
   var FILE = location.pathname.split("/").pop() || "index.html";
   var STORE_KEY = "techzone-edits:" + location.pathname;
   var IMAGE_CACHE_KEY = "techzone-published-images:" + location.pathname;
+  var PRODUCTS_KEY = "techzone-products:" + location.pathname;
   var PASS_KEY = "techzone-publish-pass";
   var PUBLISH_ENDPOINT = "api/publish.php";
+  var PRODUCT_CATEGORIES = [
+    "computer",
+    "computer-accessories",
+    "cellphones",
+    "cellphone-accessories",
+    "cellphone-parts"
+  ];
+  var PRODUCT_CATEGORY_LABELS = {
+    computer: "Computer",
+    "computer-accessories": "Computer Accessories",
+    cellphones: "Cellphones",
+    "cellphone-accessories": "Cellphone Accessories",
+    "cellphone-parts": "Cellphone Parts"
+  };
+  var MAX_PRODUCTS = 60;
+  var addedProducts = [];
+  var publishedProducts = [];
+  var hasProductDraft = false;
+  var productDialog = null;
+  var productForm = null;
+  var productEditId = "";
+  var productPhoto = "";
+  var productStatusEl = null;
+  var productThumbEl = null;
+  var productFileInput = null;
   var SKIP = {
     HTML: 1, BODY: 1, MAIN: 1, HEADER: 1, FOOTER: 1, SECTION: 1, DIV: 1,
     NAV: 1, UL: 1, OL: 1, ARTICLE: 1, FORM: 1, TABLE: 1, THEAD: 1,
@@ -112,6 +138,7 @@
         el.tagName === "BUTTON" && el.hasAttribute("data-filter");
       if (SKIP[el.tagName] && !isFilterTab) continue;
       if (el.closest("[data-editor-ui]")) continue;
+      if (el.closest("[data-tz-product]")) continue;
       if (el.closest("svg")) continue;
       if (el.closest('[aria-hidden="true"]')) continue;
       if (el.classList.contains("skip-link")) continue;
@@ -148,7 +175,9 @@
     var all = document.querySelectorAll("img");
     var items = [];
     for (var i = 0; i < all.length; i++) {
-      if (!all[i].closest("[data-editor-ui]")) items.push(all[i]);
+      if (!all[i].closest("[data-editor-ui]") && !all[i].closest("[data-tz-product]")) {
+        items.push(all[i]);
+      }
     }
     return items;
   }
@@ -159,6 +188,7 @@
     for (var i = 0; i < all.length; i++) {
       var link = all[i];
       if (link.closest("[data-editor-ui]")) continue;
+      if (link.closest("[data-tz-product]")) continue;
       if (link.classList.contains("skip-link")) continue;
       if (link.closest('[aria-hidden="true"]')) continue;
       if (link.hasAttribute("data-no-edit")) continue;
@@ -520,6 +550,7 @@
       else if (action === "reset") resetPage();
       else if (action === "publish") publishPage();
       else if (action === "unpublish") unpublishPage();
+      else if (action === "add-product") openProductDialog();
     });
     if (!canPublish) {
       var hidePublish = ui.querySelector('[data-tzedit="publish"]');
@@ -528,6 +559,33 @@
       if (hideUnpublish) hideUnpublish.hidden = true;
     }
     fileInput.addEventListener("change", onFilePicked);
+
+    if (onShopPage()) {
+      var actions = ui.querySelector(".tzedit-panel__actions");
+      var publishBtn = actions.querySelector('[data-tzedit="publish"]');
+      var addProductBtn = document.createElement("button");
+      addProductBtn.type = "button";
+      addProductBtn.className = "tzedit-btn";
+      addProductBtn.setAttribute("data-tzedit", "add-product");
+      addProductBtn.textContent = "Add product";
+      if (publishBtn) actions.insertBefore(addProductBtn, publishBtn.nextSibling);
+      else actions.appendChild(addProductBtn);
+
+      var shopGrid = document.querySelector(".product-grid--shop");
+      if (shopGrid) {
+        shopGrid.addEventListener(
+          "click",
+          function (event) {
+            var editBtn = event.target.closest("[data-tzprod-edit]");
+            if (!editBtn) return;
+            event.preventDefault();
+            event.stopPropagation();
+            openProductDialog(editBtn.getAttribute("data-tzprod-edit"));
+          },
+          true
+        );
+      }
+    }
 
     linkHandle.addEventListener("click", function (event) {
       event.preventDefault();
@@ -634,6 +692,7 @@
     window.removeEventListener("resize", onViewportChange);
     closeLinkPopover();
     closeImagePopover();
+    closeProductDialog();
     hideLinkHandle(true);
     restoreDetails();
     panel.hidden = true;
@@ -1064,6 +1123,415 @@
     });
   }
 
+  /* ---------- Shop products ---------- */
+
+  function onShopPage() {
+    return !!document.body && document.body.getAttribute("data-page") === "shop";
+  }
+
+  function productHref(name) {
+    return "contact.html?product=" + encodeURIComponent(name);
+  }
+
+  function priceLabel(price) {
+    var parts = (Math.round(price * 100) / 100).toFixed(2).split(".");
+    var whole = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts[1] === "00" ? "$" + whole : "$" + whole + "." + parts[1];
+  }
+
+  function newProductId() {
+    return (
+      "p-" +
+      Date.now().toString(36) +
+      Math.random().toString(36).slice(2, 6)
+    );
+  }
+
+  function findAddedProduct(id) {
+    for (var i = 0; i < addedProducts.length; i++) {
+      if (addedProducts[i].id === id) return addedProducts[i];
+    }
+    return null;
+  }
+
+  function indexOfProduct(id) {
+    for (var i = 0; i < addedProducts.length; i++) {
+      if (addedProducts[i].id === id) return i;
+    }
+    return -1;
+  }
+
+  function normalizeProducts(list) {
+    if (!Array.isArray(list)) return [];
+    var out = [];
+    var seen = {};
+    list.slice(0, MAX_PRODUCTS).forEach(function (item) {
+      if (!isObject(item)) return;
+      var id = typeof item.id === "string" ? item.id.toLowerCase() : "";
+      if (!/^p-[a-z0-9]{4,24}$/.test(id) || seen[id]) return;
+      var name = String(item.name || "").replace(/\s+/g, " ").trim().slice(0, 80);
+      if (!name) return;
+      var price = Number(item.price);
+      if (!isFinite(price) || price <= 0) return;
+      var category =
+        PRODUCT_CATEGORIES.indexOf(item.category) !== -1 ? item.category : "";
+      if (!category) return;
+      var description = String(item.description || "").trim().slice(0, 400);
+      var image = typeof item.image === "string" ? item.image : "";
+      if (
+        image &&
+        image.indexOf("data:image/") !== 0 &&
+        !/^[A-Za-z0-9][A-Za-z0-9._~\-/]*$/.test(image)
+      ) {
+        image = "";
+      }
+      var href = typeof item.href === "string" ? item.href.trim() : "";
+      if (!href || /^\s*javascript:/i.test(href)) href = productHref(name);
+      seen[id] = true;
+      out.push({
+        id: id,
+        name: name,
+        price: Math.round(price * 100) / 100,
+        category: category,
+        description: description,
+        image: image,
+        href: href
+      });
+    });
+    return out;
+  }
+
+  function readProductDraft() {
+    if (!onShopPage()) return null;
+    try {
+      var raw = localStorage.getItem(PRODUCTS_KEY);
+      if (raw === null) return null;
+      var list = normalizeProducts(JSON.parse(raw));
+      hasProductDraft = true;
+      return list;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function writeProductDraft() {
+    hasProductDraft = true;
+    try {
+      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(addedProducts));
+    } catch (err) {
+      setStatus(
+        "These products are too large to keep in this browser. Publish now to save them.",
+        "error"
+      );
+    }
+  }
+
+  function buildProductCard(product) {
+    var card = document.createElement("article");
+    card.className = "product-card";
+    card.setAttribute("data-category", product.category);
+    card.setAttribute("data-tz-product", product.id);
+
+    var media = document.createElement("a");
+    media.className = "product-card__media";
+    media.setAttribute("href", product.href);
+    media.setAttribute("aria-label", "Enquire about " + product.name);
+    if (product.image) {
+      var img = document.createElement("img");
+      img.src = product.image;
+      img.alt = product.name;
+      img.width = 900;
+      img.height = 900;
+      img.loading = "lazy";
+      media.appendChild(img);
+    } else {
+      media.className += " product-card__media--placeholder";
+      var initial = document.createElement("span");
+      initial.setAttribute("aria-hidden", "true");
+      initial.textContent = product.name.charAt(0).toUpperCase();
+      media.appendChild(initial);
+    }
+    card.appendChild(media);
+
+    var body = document.createElement("div");
+    body.className = "product-card__body";
+
+    var meta = document.createElement("div");
+    meta.className = "product-card__meta";
+    var categoryEl = document.createElement("span");
+    categoryEl.textContent =
+      PRODUCT_CATEGORY_LABELS[product.category] || product.category;
+    var priceEl = document.createElement("span");
+    priceEl.className = "product-card__price";
+    priceEl.textContent = priceLabel(product.price);
+    meta.appendChild(categoryEl);
+    meta.appendChild(priceEl);
+    body.appendChild(meta);
+
+    var heading = document.createElement("h3");
+    heading.className = "product-card__name";
+    var nameLink = document.createElement("a");
+    nameLink.setAttribute("href", product.href);
+    nameLink.textContent = product.name;
+    heading.appendChild(nameLink);
+    body.appendChild(heading);
+
+    if (product.description) {
+      var desc = document.createElement("p");
+      desc.className = "product-card__desc";
+      desc.textContent = product.description;
+      body.appendChild(desc);
+    }
+
+    var cta = document.createElement("a");
+    cta.className = "product-card__cta";
+    cta.setAttribute("href", product.href);
+    cta.innerHTML =
+      'Enquire <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+    body.appendChild(cta);
+    card.appendChild(body);
+
+    var editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "tzprod-edit";
+    editBtn.setAttribute("data-tzprod-edit", product.id);
+    editBtn.setAttribute("data-editor-ui", "");
+    editBtn.textContent = "Edit product";
+    card.appendChild(editBtn);
+
+    return card;
+  }
+
+  function renderProducts() {
+    if (!onShopPage()) return;
+    var grid = document.querySelector(".product-grid--shop");
+    if (!grid) return;
+    var old = grid.querySelectorAll("[data-tz-product]");
+    for (var i = 0; i < old.length; i++) {
+      if (old[i].parentNode) old[i].parentNode.removeChild(old[i]);
+    }
+    addedProducts.forEach(function (product) {
+      grid.appendChild(buildProductCard(product));
+    });
+    document.dispatchEvent(new CustomEvent("tz:shop-updated"));
+  }
+
+  function setProductStatus(text, tone) {
+    if (!productStatusEl) return;
+    productStatusEl.textContent = text || "";
+    if (tone) productStatusEl.setAttribute("data-tone", tone);
+    else productStatusEl.removeAttribute("data-tone");
+  }
+
+  function renderProductThumb() {
+    if (!productThumbEl) return;
+    productThumbEl.innerHTML = "";
+    if (productPhoto) {
+      var img = document.createElement("img");
+      img.src = productPhoto;
+      img.alt = "Product photo";
+      productThumbEl.appendChild(img);
+    } else {
+      var span = document.createElement("span");
+      span.textContent = "+";
+      productThumbEl.appendChild(span);
+    }
+  }
+
+  function ensureProductDialog() {
+    if (productDialog) return;
+    productDialog = document.createElement("dialog");
+    productDialog.className = "tzprod";
+    productDialog.setAttribute("data-editor-ui", "");
+    productDialog.setAttribute("aria-labelledby", "tzprod-title");
+    productDialog.innerHTML =
+      '<form class="tzprod__form" novalidate>' +
+      '<div class="tzprod__head">' +
+      '<p class="tzprod__eyebrow">Shop product</p>' +
+      '<h2 class="tzprod__title" id="tzprod-title">Add product</h2>' +
+      '<button class="tzprod__close" type="button" data-tzprod="close" aria-label="Close">&times;</button>' +
+      "</div>" +
+      '<div class="tzprod__photo">' +
+      '<div class="tzprod__thumb" data-tzprod-thumb><span>+</span></div>' +
+      '<div class="tzprod__photo-actions">' +
+      '<button class="tzedit-btn" type="button" data-tzprod="photo">Choose photo</button> ' +
+      '<button class="tzedit-btn" type="button" data-tzprod="nophoto">No photo</button>' +
+      '<p class="tzprod__hint">JPG, PNG or WebP. Photos are resized automatically.</p>' +
+      "</div>" +
+      '<input type="file" accept="image/*" data-tzprod-file hidden>' +
+      "</div>" +
+      '<label class="tzprod__field"><span>Product name</span>' +
+      '<input name="name" type="text" maxlength="80" required autocomplete="off"></label>' +
+      '<div class="tzprod__row">' +
+      '<label class="tzprod__field"><span>Price (USD)</span>' +
+      '<input name="price" type="text" inputmode="decimal" required autocomplete="off" placeholder="649"></label>' +
+      '<label class="tzprod__field"><span>Category</span><select name="category"></select></label>' +
+      "</div>" +
+      '<label class="tzprod__field"><span>Short description <em>optional</em></span>' +
+      '<textarea name="description" rows="3" maxlength="400"></textarea></label>' +
+      '<p class="tzprod__status" role="status" aria-live="polite"></p>' +
+      '<div class="tzprod__actions">' +
+      '<button class="tzedit-btn tzedit-btn--primary" type="submit">Save product</button>' +
+      '<button class="tzedit-btn" type="button" data-tzprod="close">Cancel</button>' +
+      '<button class="tzedit-btn tzedit-btn--danger" type="button" data-tzprod="remove" hidden>Remove product</button>' +
+      "</div></form>";
+    document.body.appendChild(productDialog);
+
+    productForm = productDialog.querySelector(".tzprod__form");
+    productStatusEl = productDialog.querySelector(".tzprod__status");
+    productThumbEl = productDialog.querySelector(".tzprod__thumb");
+    productFileInput = productDialog.querySelector("[data-tzprod-file]");
+
+    var select = productForm.elements.category;
+    PRODUCT_CATEGORIES.forEach(function (value) {
+      var option = document.createElement("option");
+      option.value = value;
+      option.textContent = PRODUCT_CATEGORY_LABELS[value];
+      select.appendChild(option);
+    });
+
+    productDialog.addEventListener("click", function (event) {
+      var btn = event.target.closest("[data-tzprod]");
+      if (!btn) return;
+      var action = btn.getAttribute("data-tzprod");
+      if (action === "close") closeProductDialog();
+      else if (action === "photo") productFileInput.click();
+      else if (action === "nophoto") {
+        productPhoto = "";
+        renderProductThumb();
+      } else if (action === "remove") removeProduct();
+    });
+
+    productDialog.addEventListener("close", function () {
+      productEditId = "";
+      productPhoto = "";
+      setProductStatus("");
+    });
+
+    productForm.addEventListener("submit", saveProduct);
+
+    productFileInput.addEventListener("change", function () {
+      var file = productFileInput.files && productFileInput.files[0];
+      if (!file) return;
+      setProductStatus("Preparing photo…");
+      encodeImage(file)
+        .then(function (url) {
+          productPhoto = url;
+          renderProductThumb();
+          setProductStatus("");
+        })
+        .catch(function () {
+          setProductStatus(
+            "That photo format is not supported. Save it as a JPG or PNG and try again.",
+            "error"
+          );
+        });
+      productFileInput.value = "";
+    });
+  }
+
+  function openProductDialog(id) {
+    if (!editing || !onShopPage()) return;
+    ensureProductDialog();
+    var product = id ? findAddedProduct(id) : null;
+    productEditId = product ? product.id : "";
+    productPhoto = product ? product.image : "";
+    productForm.reset();
+    productForm.elements.name.value = product ? product.name : "";
+    productForm.elements.price.value = product ? String(product.price) : "";
+    productForm.elements.category.value = product
+      ? product.category
+      : PRODUCT_CATEGORIES[0];
+    productForm.elements.description.value = product
+      ? product.description
+      : "";
+    productDialog.querySelector(".tzprod__title").textContent = product
+      ? "Edit product"
+      : "Add product";
+    productDialog.querySelector('[data-tzprod="remove"]').hidden = !product;
+    setProductStatus("");
+    renderProductThumb();
+    productDialog.showModal();
+    productForm.elements.name.focus();
+  }
+
+  function closeProductDialog() {
+    if (productDialog && productDialog.open) productDialog.close();
+    productEditId = "";
+  }
+
+  function saveProduct(event) {
+    event.preventDefault();
+    var name = productForm.elements.name.value.replace(/\s+/g, " ").trim();
+    var price = parseFloat(
+      productForm.elements.price.value.replace(/,/g, "").replace(/[^0-9.]/g, "")
+    );
+    var category = productForm.elements.category.value;
+    if (!name) {
+      setProductStatus("Enter a product name.", "error");
+      productForm.elements.name.focus();
+      return;
+    }
+    if (!isFinite(price) || price <= 0) {
+      setProductStatus("Enter a price greater than zero.", "error");
+      productForm.elements.price.focus();
+      return;
+    }
+    if (PRODUCT_CATEGORIES.indexOf(category) === -1) {
+      setProductStatus("Choose a category.", "error");
+      return;
+    }
+
+    var wasEditing = !!productEditId;
+    if (!wasEditing && addedProducts.length >= MAX_PRODUCTS) {
+      setProductStatus(
+        "You can add up to " + MAX_PRODUCTS + " products. Remove one first.",
+        "error"
+      );
+      return;
+    }
+
+    var product = {
+      id: wasEditing ? productEditId : newProductId(),
+      name: name.slice(0, 80),
+      price: Math.round(price * 100) / 100,
+      category: category,
+      description: productForm.elements.description.value.trim().slice(0, 400),
+      image: productPhoto,
+      href: productHref(name)
+    };
+    var index = wasEditing ? indexOfProduct(product.id) : -1;
+    if (index === -1) addedProducts.push(product);
+    else addedProducts[index] = product;
+
+    writeProductDraft();
+    renderProducts();
+    closeProductDialog();
+    setStatus(
+      (wasEditing ? "Product updated" : "Product added") +
+        " — press Publish to put it on the live site.",
+      "ok"
+    );
+  }
+
+  function removeProduct() {
+    var product = findAddedProduct(productEditId);
+    if (!product) return;
+    if (
+      !window.confirm(
+        'Remove "' + product.name + '" from the shop? Press Publish to apply it to the live site.'
+      )
+    ) {
+      return;
+    }
+    var index = indexOfProduct(product.id);
+    if (index !== -1) addedProducts.splice(index, 1);
+    writeProductDraft();
+    renderProducts();
+    closeProductDialog();
+    setStatus("Product removed — press Publish to update the live site.", "ok");
+  }
+
   function openDetails() {
     detailState = [];
     document.querySelectorAll("details").forEach(function (detail) {
@@ -1226,6 +1694,9 @@
           throw new Error("The site sent an unexpected answer.");
         }
         published = normalize(json.edits);
+        publishedProducts = normalizeProducts(
+          json.edits && json.edits.products
+        );
         publishedKnown = true;
         return published;
       });
@@ -1283,7 +1754,8 @@
       images: mergeMap(published.images, edits.images),
       links: mergeMap(published.links, edits.links),
       removed: mergeMap(published.removed, edits.removed),
-      removedImages: mergeMap(published.removedImages, edits.removedImages)
+      removedImages: mergeMap(published.removedImages, edits.removedImages),
+      products: addedProducts.slice()
     };
   }
 
@@ -1313,6 +1785,44 @@
       }, Promise.resolve())
       .then(function () {
         return { images: out, skipped: skipped };
+      });
+  }
+
+  function prepareProductsForPublish() {
+    var out = [];
+    var skipped = 0;
+    return addedProducts
+      .reduce(function (chain, product) {
+        return chain.then(function () {
+          var copy = {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            category: product.category,
+            description: product.description,
+            image: product.image,
+            href: product.href
+          };
+          if (
+            typeof copy.image === "string" &&
+            copy.image.indexOf("data:image/") === 0 &&
+            (PUBLISH_IMAGE_TYPES.indexOf(dataUrlMime(copy.image)) === -1 ||
+              dataUrlBytes(copy.image) > MAX_PUBLISH_BYTES)
+          ) {
+            return prepareDataUrl(copy.image).then(function (fixed) {
+              if (fixed) copy.image = fixed;
+              else {
+                copy.image = "";
+                skipped++;
+              }
+              out.push(copy);
+            });
+          }
+          out.push(copy);
+        });
+      }, Promise.resolve())
+      .then(function () {
+        return { products: out, skipped: skipped };
       });
   }
 
@@ -1370,6 +1880,12 @@
     } catch (err) {
       /* storage unavailable */
     }
+    hasProductDraft = false;
+    try {
+      localStorage.removeItem(PRODUCTS_KEY);
+    } catch (err) {
+      /* storage unavailable */
+    }
   }
 
   function publishPage() {
@@ -1393,11 +1909,17 @@
       .then(function () {
         setStatus("Preparing photos…");
         var merged = mergeForPublish();
-        return prepareImagesForPublish(merged.images).then(function (prepared) {
-          skippedPhotos = prepared.skipped;
-          merged.images = prepared.images;
-          return merged;
-        });
+        return prepareImagesForPublish(merged.images)
+          .then(function (prepared) {
+            skippedPhotos = prepared.skipped;
+            merged.images = prepared.images;
+            return prepareProductsForPublish();
+          })
+          .then(function (prepared) {
+            skippedPhotos += prepared.skipped;
+            merged.products = prepared.products;
+            return merged;
+          });
       })
       .then(function (merged) {
         setStatus("Publishing to the live site…");
@@ -1410,9 +1932,16 @@
       })
       .then(function (json) {
         published = normalize(json.edits);
+        publishedProducts = normalizeProducts(
+          json.edits && json.edits.products
+        );
         keepPass();
         writeImageCache(published.images);
-        if (!skippedPhotos) clearLocalEdits();
+        if (!skippedPhotos) {
+          clearLocalEdits();
+          addedProducts = publishedProducts.slice();
+          renderProducts();
+        }
         setPublishBusy(false);
         if (skippedPhotos) {
           setStatus(
@@ -1462,6 +1991,7 @@
     postPublish({ action: "clear", page: FILE, pass: pass })
       .then(function () {
         published = emptyState();
+        publishedProducts = [];
         writeImageCache(null);
         clearLocalEdits();
         location.reload();
@@ -1491,6 +2021,7 @@
     }
     try {
       localStorage.removeItem(STORE_KEY);
+      localStorage.removeItem(PRODUCTS_KEY);
     } catch (err) {
       /* nothing to clear */
     }
@@ -1510,6 +2041,7 @@
       }
       return;
     }
+    if (productDialog && productDialog.open) return;
     if (
       !isLocal &&
       (event.ctrlKey || event.metaKey) &&
@@ -1563,6 +2095,14 @@
     var cachedImages = readImageCache();
     if (cachedImages) applyData({ images: cachedImages }, false);
 
+    if (canEdit) {
+      var productDraft = readProductDraft();
+      if (productDraft) {
+        addedProducts = productDraft;
+        renderProducts();
+      }
+    }
+
     withTimeout(loadPublished(), 5000)
       .catch(function () {
         publishedKnown = false;
@@ -1572,6 +2112,10 @@
         if (data) {
           applyData(data, false);
           writeImageCache(data.images);
+        }
+        if (!hasProductDraft && onShopPage()) {
+          addedProducts = publishedProducts.slice();
+          renderProducts();
         }
         if (!canEdit) return;
         applySaved(saved);

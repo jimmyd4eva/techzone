@@ -552,6 +552,7 @@
 
   injectToggle();
   addButtons();
+  document.addEventListener("tz:shop-updated", addButtons);
   render();
   showPaidNotice();
 })();

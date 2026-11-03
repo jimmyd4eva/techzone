@@ -22,6 +22,8 @@ const MAX_BODY = 6000000;
 const MAX_IMAGE_BYTES = 3000000;
 const MAX_TEXT = 200000;
 const MAX_ENTRIES = 2000;
+const MAX_PRODUCTS = 60;
+const PRODUCT_CATEGORIES = ['computer', 'computer-accessories', 'cellphones', 'cellphone-accessories', 'cellphone-parts'];
 const THROTTLE_ATTEMPTS = 20;
 const THROTTLE_WINDOW = 600;
 
@@ -284,6 +286,89 @@ function clean_image_map($value, string $base, string $imgDir): array
     return $out;
 }
 
+function clean_product_list($value, string $base, string $imgDir): array
+{
+    if (!is_array($value)) {
+        return [];
+    }
+    $out = [];
+    $seen = [];
+    foreach ($value as $item) {
+        if (count($out) >= MAX_PRODUCTS) {
+            break;
+        }
+        if (!is_array($item)) {
+            continue;
+        }
+        $id = isset($item['id']) && is_string($item['id']) ? strtolower(trim($item['id'])) : '';
+        if (!preg_match('/^p-[a-z0-9]{4,24}$/', $id) || isset($seen[$id])) {
+            continue;
+        }
+        $name = isset($item['name']) && is_string($item['name']) ? trim($item['name']) : '';
+        $name = trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $name));
+        if ($name === '' || strlen($name) > 200) {
+            continue;
+        }
+        $price = isset($item['price']) && is_numeric($item['price']) ? (float) $item['price'] : 0.0;
+        if (!is_finite($price) || $price <= 0 || $price > 1000000) {
+            continue;
+        }
+        $category = isset($item['category']) && is_string($item['category']) ? $item['category'] : '';
+        if (!in_array($category, PRODUCT_CATEGORIES, true)) {
+            continue;
+        }
+        $description = isset($item['description']) && is_string($item['description']) ? trim($item['description']) : '';
+        $description = trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $description));
+        if (strlen($description) > 400) {
+            $description = substr($description, 0, 400);
+        }
+        $href = isset($item['href']) && is_string($item['href']) ? trim($item['href']) : '';
+        if ($href === '' || strlen($href) > 2000 || preg_match('#^\s*javascript:#i', $href)) {
+            $href = 'contact.html?product=' . rawurlencode($name);
+        }
+        $image = '';
+        if (isset($item['image']) && is_string($item['image']) && $item['image'] !== '') {
+            $src = $item['image'];
+            if (strpos($src, 'data:image/') === 0) {
+                $stored = store_image($src, $base . '-p', $id, $imgDir);
+                $image = $stored === null ? '' : $stored;
+            } elseif (
+                strlen($src) <= 500 &&
+                strpos($src, '..') === false &&
+                preg_match('#^[A-Za-z0-9][A-Za-z0-9._~\-/]*$#', $src)
+            ) {
+                $image = $src;
+            }
+        }
+        $seen[$id] = true;
+        $out[] = [
+            'id' => $id,
+            'name' => $name,
+            'price' => round($price, 2),
+            'category' => $category,
+            'description' => $description,
+            'image' => $image,
+            'href' => $href,
+        ];
+    }
+    return $out;
+}
+
+function clean_unused_product_images(array $products, string $base, string $imgDir): void
+{
+    $keep = [];
+    foreach ($products as $product) {
+        if (isset($product['image']) && is_string($product['image']) && $product['image'] !== '') {
+            $keep[basename($product['image'])] = true;
+        }
+    }
+    foreach (glob($imgDir . '/' . $base . '-p-*') ?: [] as $file) {
+        if (is_file($file) && !isset($keep[basename($file)])) {
+            @unlink($file);
+        }
+    }
+}
+
 if (!same_origin()) {
     fail(403, 'This request came from another site.');
 }
@@ -374,7 +459,13 @@ $edits = [
     'links' => clean_link_map($incoming['links'] ?? []),
     'removed' => clean_removed_map($incoming['removed'] ?? []),
     'removedImages' => clean_removed_map($incoming['removedImages'] ?? []),
+    'products' => $page === 'shop.html'
+        ? clean_product_list($incoming['products'] ?? [], $base, $imgDir)
+        : [],
 ];
 
 write_json($file, $edits);
+if ($page === 'shop.html') {
+    clean_unused_product_images($edits['products'], $base, $imgDir);
+}
 respond(200, ['ok' => true, 'page' => $page, 'edits' => $edits]);

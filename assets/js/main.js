@@ -139,10 +139,13 @@
   var emptyState = document.querySelector("[data-empty-state]");
 
   if (filterButtons.length && productCards.length) {
+    var activeFilter = "all";
+
     function applyFilter(category) {
       var visible = 0;
+      activeFilter = category;
 
-      productCards.forEach(function (card) {
+      document.querySelectorAll("[data-category]").forEach(function (card) {
         var show = category === "all" || card.getAttribute("data-category") === category;
         card.classList.toggle("is-hidden", !show);
         if (show) visible += 1;
@@ -166,6 +169,9 @@
     });
 
     applyFilter("all");
+    document.addEventListener("tz:shop-updated", function () {
+      applyFilter(activeFilter);
+    });
   }
 
   /* ---------- Forms ---------- */

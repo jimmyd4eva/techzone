@@ -854,6 +854,23 @@ body.no-scroll {
   transition: transform 0.9s var(--ease), opacity 0.4s var(--ease);
 }
 
+.product-card__media--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 32% 22%, rgba(236, 61, 79, 0.18), transparent 58%),
+    linear-gradient(155deg, #16181d 0%, #0a0b0d 72%);
+}
+
+.product-card__media--placeholder span {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 7vw, 5.5rem);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--accent-dim);
+}
+
 .product-card__media::after {
   content: "";
   position: absolute;
