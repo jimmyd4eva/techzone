@@ -84,6 +84,18 @@
   border-color: var(--accent-dim);
 }
 
+.cart-add.btn:disabled,
+.cart-add.btn.is-sold-out {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cart-add.btn.is-sold-out:hover {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--muted-dim);
+}
+
 /* ---------- Cart dialog ---------- */
 
 html.cart-open,
@@ -253,6 +265,15 @@ html.cart-open body {
 
 .cart-item__qty button:hover {
   color: var(--accent-bright);
+}
+
+.cart-item__qty button:disabled {
+  color: var(--muted-dim);
+  cursor: not-allowed;
+}
+
+.cart-item__qty button:disabled:hover {
+  color: var(--muted-dim);
 }
 
 .cart-item__qty span {

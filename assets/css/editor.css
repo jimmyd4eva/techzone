@@ -586,6 +586,10 @@ html.tz-editing .tzprod-edit:focus-visible {
   gap: 0.65rem;
 }
 
+.tzprod__row--amount {
+  grid-template-columns: 1.25fr 1fr;
+}
+
 .tzprod__status {
   min-height: 1.1em;
   margin: 0.2rem 0 0.6rem;

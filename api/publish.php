@@ -313,6 +313,15 @@ function clean_product_list($value, string $base, string $imgDir): array
         if (!is_finite($price) || $price <= 0 || $price > 1000000) {
             continue;
         }
+        $qty = 0;
+        if (array_key_exists('qty', $item)) {
+            $qty = filter_var($item['qty'], FILTER_VALIDATE_INT, [
+                'options' => ['min_range' => 0, 'max_range' => 9999],
+            ]);
+            if ($qty === false) {
+                continue;
+            }
+        }
         $category = isset($item['category']) && is_string($item['category']) ? $item['category'] : '';
         if (!in_array($category, PRODUCT_CATEGORIES, true)) {
             continue;
@@ -347,6 +356,7 @@ function clean_product_list($value, string $base, string $imgDir): array
             'price' => round($price, 2),
             'category' => $category,
             'description' => $description,
+            'qty' => $qty,
             'image' => $image,
             'href' => $href,
         ];

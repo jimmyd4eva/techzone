@@ -1177,6 +1177,9 @@
         PRODUCT_CATEGORIES.indexOf(item.category) !== -1 ? item.category : "";
       if (!category) return;
       var description = String(item.description || "").trim().slice(0, 400);
+      var qty = Math.round(Number(item.qty));
+      if (!isFinite(qty) || qty < 0) qty = 1;
+      qty = Math.min(9999, qty);
       var image = typeof item.image === "string" ? item.image : "";
       if (
         image &&
@@ -1194,6 +1197,7 @@
         price: Math.round(price * 100) / 100,
         category: category,
         description: description,
+        qty: qty,
         image: image,
         href: href
       });
@@ -1231,6 +1235,7 @@
     card.className = "product-card";
     card.setAttribute("data-category", product.category);
     card.setAttribute("data-tz-product", product.id);
+    card.setAttribute("data-stock", String(product.qty));
 
     var media = document.createElement("a");
     media.className = "product-card__media";
@@ -1267,6 +1272,16 @@
     meta.appendChild(categoryEl);
     meta.appendChild(priceEl);
     body.appendChild(meta);
+
+    var stockEl = document.createElement("p");
+    stockEl.className = "product-card__stock";
+    if (product.qty === 0) {
+      stockEl.classList.add("is-out");
+      stockEl.textContent = "Sold out";
+    } else {
+      stockEl.textContent = product.qty + " in stock";
+    }
+    body.appendChild(stockEl);
 
     var heading = document.createElement("h3");
     heading.className = "product-card__name";
@@ -1362,11 +1377,13 @@
       "</div>" +
       '<label class="tzprod__field"><span>Product name</span>' +
       '<input name="name" type="text" maxlength="80" required autocomplete="off"></label>' +
-      '<div class="tzprod__row">' +
+      '<div class="tzprod__row tzprod__row--amount">' +
       '<label class="tzprod__field"><span>Price (USD)</span>' +
       '<input name="price" type="text" inputmode="decimal" required autocomplete="off" placeholder="649"></label>' +
-      '<label class="tzprod__field"><span>Category</span><select name="category"></select></label>' +
+      '<label class="tzprod__field"><span>Qnty</span>' +
+      '<input name="qty" type="text" inputmode="numeric" maxlength="4" required autocomplete="off" placeholder="1"></label>' +
       "</div>" +
+      '<label class="tzprod__field"><span>Category</span><select name="category"></select></label>' +
       '<label class="tzprod__field"><span>Short description <em>optional</em></span>' +
       '<textarea name="description" rows="3" maxlength="400"></textarea></label>' +
       '<p class="tzprod__status" role="status" aria-live="polite"></p>' +
@@ -1439,6 +1456,7 @@
     productForm.reset();
     productForm.elements.name.value = product ? product.name : "";
     productForm.elements.price.value = product ? String(product.price) : "";
+    productForm.elements.qty.value = product ? String(product.qty) : "1";
     productForm.elements.category.value = product
       ? product.category
       : PRODUCT_CATEGORIES[0];
@@ -1467,6 +1485,8 @@
       productForm.elements.price.value.replace(/,/g, "").replace(/[^0-9.]/g, "")
     );
     var category = productForm.elements.category.value;
+    var qtyRaw = productForm.elements.qty.value.trim();
+    var qty = Number(qtyRaw);
     if (!name) {
       setProductStatus("Enter a product name.", "error");
       productForm.elements.name.focus();
@@ -1475,6 +1495,20 @@
     if (!isFinite(price) || price <= 0) {
       setProductStatus("Enter a price greater than zero.", "error");
       productForm.elements.price.focus();
+      return;
+    }
+    if (
+      qtyRaw === "" ||
+      !isFinite(qty) ||
+      Math.round(qty) !== qty ||
+      qty < 0 ||
+      qty > 9999
+    ) {
+      setProductStatus(
+        "Enter the quantity you have in stock (0 to 9999). Use 0 for sold out.",
+        "error"
+      );
+      productForm.elements.qty.focus();
       return;
     }
     if (PRODUCT_CATEGORIES.indexOf(category) === -1) {
@@ -1497,6 +1531,7 @@
       price: Math.round(price * 100) / 100,
       category: category,
       description: productForm.elements.description.value.trim().slice(0, 400),
+      qty: qty,
       image: productPhoto,
       href: productHref(name)
     };
@@ -1800,6 +1835,7 @@
             price: product.price,
             category: product.category,
             description: product.description,
+            qty: product.qty,
             image: product.image,
             href: product.href
           };

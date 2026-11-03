@@ -47,11 +47,18 @@
     var qty = Math.round(Number(item.qty));
     if (!name || !isFinite(price) || price <= 0) return null;
     if (!isFinite(qty) || qty < 1) qty = 1;
+    var stock = Number(item.stock);
+    if (item.stock === null || item.stock === undefined || !isFinite(stock) || stock < 0) {
+      stock = null;
+    } else {
+      stock = Math.min(9999, Math.round(stock));
+    }
     return {
       id: String(item.id || slug(name)).slice(0, 160),
       name: name,
       price: Math.round(price * 100) / 100,
       qty: Math.min(MAX_QTY, qty),
+      stock: stock,
       image:
         typeof item.image === "string" && item.image.indexOf("data:") !== 0
           ? item.image.slice(0, 300)
@@ -148,6 +155,24 @@
 
   /* ---------- Add to cart buttons ---------- */
 
+  function cardStock(card) {
+    if (!card || !card.hasAttribute("data-stock")) return null;
+    var stock = Number(card.getAttribute("data-stock"));
+    if (!isFinite(stock) || stock < 0) return null;
+    return Math.min(9999, Math.round(stock));
+  }
+
+  function flashButton(button, text) {
+    var label = button.textContent;
+    button.textContent = text;
+    button.classList.add("is-added");
+    clearTimeout(button._cartTimer);
+    button._cartTimer = setTimeout(function () {
+      button.textContent = label;
+      button.classList.remove("is-added");
+    }, 1400);
+  }
+
   function addButtons() {
     if (document.body.getAttribute("data-page") !== "shop") return;
 
@@ -159,6 +184,8 @@
       var cta = card.querySelector(".product-card__cta");
       var nameEl = card.querySelector(".product-card__name");
       if (!body || !cta || !nameEl) continue;
+      var productName = nameEl.textContent.replace(/\s+/g, " ").trim();
+      var stock = cardStock(card);
 
       var row = document.createElement("div");
       row.className = "cart-add-row";
@@ -168,11 +195,15 @@
       button.type = "button";
       button.className = "btn btn--primary btn--sm cart-add";
       button.setAttribute("data-add-to-cart", "");
-      button.setAttribute(
-        "aria-label",
-        "Add " + nameEl.textContent.replace(/\s+/g, " ").trim() + " to cart"
-      );
-      button.textContent = "Add to cart";
+      if (stock === 0) {
+        button.disabled = true;
+        button.classList.add("is-sold-out");
+        button.textContent = "Sold out";
+        button.setAttribute("aria-label", productName + " is sold out");
+      } else {
+        button.setAttribute("aria-label", "Add " + productName + " to cart");
+        button.textContent = "Add to cart";
+      }
 
       row.appendChild(button);
       body.insertBefore(row, cta);
@@ -190,16 +221,25 @@
       : 0;
     if (!name || !isFinite(price) || price <= 0) return;
 
+    var stock = cardStock(card);
+    if (stock === 0) return;
+    var cap = stock === null ? MAX_QTY : Math.min(MAX_QTY, stock);
     var id = slug(name);
     var existing = findItem(id);
     if (existing) {
-      existing.qty = Math.min(MAX_QTY, existing.qty + 1);
+      if (stock !== null) existing.stock = stock;
+      if (existing.qty >= cap) {
+        flashButton(button, stock === null ? "Cart is full" : "Only " + cap + " left");
+        return;
+      }
+      existing.qty = Math.min(cap, existing.qty + 1);
     } else {
       items.push({
         id: id,
         name: name.slice(0, 120),
         price: Math.round(price * 100) / 100,
         qty: 1,
+        stock: stock,
         image:
           imgEl && imgEl.getAttribute("src").indexOf("data:") !== 0
             ? imgEl.getAttribute("src")
@@ -208,15 +248,7 @@
       });
     }
     saveCart();
-
-    var label = button.textContent;
-    button.textContent = "Added to cart";
-    button.classList.add("is-added");
-    clearTimeout(button._cartTimer);
-    button._cartTimer = setTimeout(function () {
-      button.textContent = label;
-      button.classList.remove("is-added");
-    }, 1400);
+    flashButton(button, "Added to cart");
   }
 
   /* ---------- Cart dialog ---------- */
@@ -331,6 +363,9 @@
     inc.setAttribute("data-cart-action", "inc");
     inc.setAttribute("aria-label", "Add one " + item.name);
     inc.textContent = "+";
+    if (item.stock !== null && item.qty >= Math.min(MAX_QTY, item.stock)) {
+      inc.disabled = true;
+    }
 
     qty.appendChild(dec);
     qty.appendChild(count);
@@ -497,7 +532,9 @@
 
     var kind = action.getAttribute("data-cart-action");
     if (kind === "inc") {
-      item.qty = Math.min(MAX_QTY, item.qty + 1);
+      var cap =
+        item.stock === null ? MAX_QTY : Math.min(MAX_QTY, item.stock);
+      item.qty = Math.max(1, Math.min(cap, item.qty + 1));
     } else if (kind === "dec") {
       item.qty = Math.max(1, item.qty - 1);
     } else if (kind === "remove") {

@@ -932,6 +932,19 @@ body.no-scroll {
   font-variant-numeric: tabular-nums;
 }
 
+.product-card__stock {
+  margin-top: 0.45rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted-dim);
+}
+
+.product-card__stock.is-out {
+  color: var(--accent-bright);
+}
+
 .product-card__name {
   margin-top: 0.55rem;
   font-family: var(--font-display);
