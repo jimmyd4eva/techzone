@@ -303,6 +303,15 @@
         missing++;
         return;
       }
+      if (!img.dataset.tzFallbackSrc) {
+        img.dataset.tzFallbackSrc = img.getAttribute("src") || "";
+        img.addEventListener("error", function () {
+          var fallback = img.dataset.tzFallbackSrc;
+          if (fallback && img.getAttribute("src") !== fallback) {
+            img.src = fallback;
+          }
+        });
+      }
       img.removeAttribute("srcset");
       img.src = data.images[key];
       if (track) edits.images[key] = data.images[key];
