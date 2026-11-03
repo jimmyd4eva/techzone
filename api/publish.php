@@ -25,7 +25,7 @@ const MAX_IMAGE_BYTES = 3000000;
 const MAX_TEXT = 200000;
 const MAX_ENTRIES = 2000;
 const MAX_PRODUCTS = 60;
-const PRODUCT_CATEGORIES = ['computer', 'computer-accessories', 'cellphones', 'cellphone-accessories', 'cellphone-parts'];
+const PRODUCT_CATEGORIES = ['computer', 'computer-accessories', 'cellphones', 'cellphone-accessories', 'cellphone-parts', 'jewelry-perfume', 'random-stuff'];
 const THROTTLE_ATTEMPTS = 20;
 const THROTTLE_WINDOW = 600;
 

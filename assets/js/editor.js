@@ -64,14 +64,18 @@
     "computer-accessories",
     "cellphones",
     "cellphone-accessories",
-    "cellphone-parts"
+    "cellphone-parts",
+    "jewelry-perfume",
+    "random-stuff"
   ];
   var PRODUCT_CATEGORY_LABELS = {
     computer: "Computer",
     "computer-accessories": "Computer Accessories",
     cellphones: "Cellphones",
     "cellphone-accessories": "Cellphone Accessories",
-    "cellphone-parts": "Cellphone Parts"
+    "cellphone-parts": "Cellphone Parts",
+    "jewelry-perfume": "Jewelry / Perfume",
+    "random-stuff": "Random Stuff"
   };
   var MAX_PRODUCTS = 60;
   var addedProducts = [];
