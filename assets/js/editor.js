@@ -69,8 +69,8 @@
     "random-stuff"
   ];
   var PRODUCT_CATEGORY_LABELS = {
-    computer: "Computer",
-    "computer-accessories": "Computer Accessories",
+    computer: "Electronics",
+    "computer-accessories": "Computer / Accessories",
     cellphones: "Cellphones",
     "cellphone-accessories": "Cellphone Accessories",
     "cellphone-parts": "Cellphone Parts",
