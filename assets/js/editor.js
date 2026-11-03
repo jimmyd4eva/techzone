@@ -55,6 +55,7 @@
   var canEdit = isLocal || remembered;
   var FILE = location.pathname.split("/").pop() || "index.html";
   var STORE_KEY = "techzone-edits:" + location.pathname;
+  var IMAGE_CACHE_KEY = "techzone-published-images:" + location.pathname;
   var PASS_KEY = "techzone-publish-pass";
   var PUBLISH_ENDPOINT = "api/publish.php";
   var SKIP = {
@@ -215,6 +216,39 @@
     }
   }
 
+  function readImageCache() {
+    try {
+      var raw = localStorage.getItem(IMAGE_CACHE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!isObject(data)) return null;
+      var images = {};
+      var count = 0;
+      Object.keys(data).forEach(function (key) {
+        var value = data[key];
+        if (typeof value === "string" && value.indexOf("data:") !== 0) {
+          images[key] = value;
+          count++;
+        }
+      });
+      return count ? images : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function writeImageCache(images) {
+    try {
+      if (!images || !Object.keys(images).length) {
+        localStorage.removeItem(IMAGE_CACHE_KEY);
+      } else {
+        localStorage.setItem(IMAGE_CACHE_KEY, JSON.stringify(images));
+      }
+    } catch (err) {
+      /* storage unavailable */
+    }
+  }
+
   function emptyState() {
     return {
       v: 2,
@@ -313,7 +347,9 @@
         });
       }
       img.removeAttribute("srcset");
-      img.src = data.images[key];
+      if (img.getAttribute("src") !== data.images[key]) {
+        img.src = data.images[key];
+      }
       if (track) edits.images[key] = data.images[key];
     });
 
@@ -1375,6 +1411,7 @@
       .then(function (json) {
         published = normalize(json.edits);
         keepPass();
+        writeImageCache(published.images);
         if (!skippedPhotos) clearLocalEdits();
         setPublishBusy(false);
         if (skippedPhotos) {
@@ -1425,6 +1462,7 @@
     postPublish({ action: "clear", page: FILE, pass: pass })
       .then(function () {
         published = emptyState();
+        writeImageCache(null);
         clearLocalEdits();
         location.reload();
       })
@@ -1522,6 +1560,8 @@
     assignKeys();
 
     var saved = readStore();
+    var cachedImages = readImageCache();
+    if (cachedImages) applyData({ images: cachedImages }, false);
 
     withTimeout(loadPublished(), 5000)
       .catch(function () {
@@ -1529,7 +1569,10 @@
         return null;
       })
       .then(function (data) {
-        if (data) applyData(data, false);
+        if (data) {
+          applyData(data, false);
+          writeImageCache(data.images);
+        }
         if (!canEdit) return;
         applySaved(saved);
         buildUI();
