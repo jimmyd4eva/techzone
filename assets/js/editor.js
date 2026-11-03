@@ -1356,6 +1356,14 @@
       var img = document.createElement("img");
       img.src = productPhoto;
       img.alt = "Product photo";
+      img.addEventListener("error", function () {
+        if (img.parentNode !== productThumbEl) return;
+        productThumbEl.innerHTML = "";
+        var missing = document.createElement("span");
+        missing.setAttribute("aria-hidden", "true");
+        missing.textContent = "!";
+        productThumbEl.appendChild(missing);
+      });
       productThumbEl.appendChild(img);
     } else {
       var span = document.createElement("span");
