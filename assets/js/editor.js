@@ -80,6 +80,7 @@
   var productDialog = null;
   var productForm = null;
   var productEditId = "";
+  var productCardIndex = null;
   var productPhoto = "";
   var productOrigPhoto = "";
   var productStatusEl = null;
@@ -190,6 +191,7 @@
       var link = all[i];
       if (link.closest("[data-editor-ui]")) continue;
       if (link.closest("[data-tz-product]")) continue;
+      if (FILE === "shop.html" && link.classList.contains("product-card__media")) continue;
       if (link.classList.contains("skip-link")) continue;
       if (link.closest('[aria-hidden="true"]')) continue;
       if (link.hasAttribute("data-no-edit")) continue;
@@ -572,6 +574,8 @@
       if (publishBtn) actions.insertBefore(addProductBtn, publishBtn.nextSibling);
       else actions.appendChild(addProductBtn);
 
+      buildCardChips();
+
       var shopGrid = document.querySelector(".product-grid--shop");
       if (shopGrid) {
         shopGrid.addEventListener(
@@ -584,12 +588,22 @@
               openProductDialog(editBtn.getAttribute("data-tzprod-edit"));
               return;
             }
-            if (!editing) return;
-            var card = event.target.closest("[data-tz-product]");
-            if (card && event.target.closest(".product-card__media")) {
+            var cardBtn = event.target.closest("[data-tz-card-edit]");
+            if (cardBtn && editing) {
               event.preventDefault();
               event.stopPropagation();
+              openCardProductDialog(cardBtn.closest(".product-card"));
+              return;
+            }
+            if (!editing) return;
+            var card = event.target.closest(".product-card");
+            if (!card || !event.target.closest(".product-card__media")) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (card.hasAttribute("data-tz-product")) {
               openProductDialog(card.getAttribute("data-tz-product"));
+            } else {
+              openCardProductDialog(card);
             }
           },
           true
@@ -1336,18 +1350,63 @@
     return card;
   }
 
+  function staticShopCards() {
+    var grid = document.querySelector(".product-grid--shop");
+    if (!grid) return [];
+    var cards = [];
+    for (var i = 0; i < grid.children.length; i++) {
+      var el = grid.children[i];
+      if (!el.classList || !el.classList.contains("product-card")) continue;
+      if (el.hasAttribute("data-tz-product")) continue;
+      if (!el.hasAttribute("data-tz-card")) {
+        el.setAttribute("data-tz-card", String(cards.length));
+      }
+      cards.push(el);
+    }
+    cards.sort(function (a, b) {
+      return Number(a.getAttribute("data-tz-card")) - Number(b.getAttribute("data-tz-card"));
+    });
+    return cards;
+  }
+
   function renderProducts() {
     if (!onShopPage()) return;
     var grid = document.querySelector(".product-grid--shop");
     if (!grid) return;
+    var statics = staticShopCards();
+    statics.forEach(function (card) {
+      card.classList.remove("is-managed-source");
+    });
     var old = grid.querySelectorAll("[data-tz-product]");
     for (var i = 0; i < old.length; i++) {
       if (old[i].parentNode) old[i].parentNode.removeChild(old[i]);
     }
     addedProducts.forEach(function (product) {
-      grid.appendChild(buildProductCard(product));
+      var card = buildProductCard(product);
+      var match = /^p-card(\d+)$/.exec(product.id);
+      var source = match ? statics[Number(match[1])] : null;
+      if (source) {
+        source.classList.add("is-managed-source");
+        source.parentNode.insertBefore(card, source.nextSibling);
+      } else {
+        grid.appendChild(card);
+      }
     });
     document.dispatchEvent(new CustomEvent("tz:shop-updated"));
+  }
+
+  function buildCardChips() {
+    if (!onShopPage()) return;
+    staticShopCards().forEach(function (card) {
+      if (card.querySelector("[data-tz-card-edit]")) return;
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tzprod-edit";
+      btn.setAttribute("data-tz-card-edit", card.getAttribute("data-tz-card"));
+      btn.setAttribute("data-editor-ui", "");
+      btn.textContent = "Edit product";
+      card.appendChild(btn);
+    });
   }
 
   function setProductStatus(text, tone) {
@@ -1493,11 +1552,47 @@
     });
   }
 
+  function openCardProductDialog(card) {
+    if (!editing || !onShopPage() || !card) return;
+    ensureProductDialog();
+    var nameEl = card.querySelector(".product-card__name");
+    var priceEl = card.querySelector(".product-card__price");
+    var descEl = card.querySelector(".product-card__desc");
+    var imgEl = card.querySelector(".product-card__media img");
+    var name = nameEl ? nameEl.textContent.replace(/\s+/g, " ").trim() : "";
+    var price = priceEl
+      ? parseFloat((priceEl.textContent || "").replace(/,/g, "").replace(/[^0-9.]/g, ""))
+      : 0;
+    var category = card.getAttribute("data-category");
+    var stock = card.hasAttribute("data-stock")
+      ? Number(card.getAttribute("data-stock"))
+      : null;
+    productEditId = "";
+    productCardIndex = Number(card.getAttribute("data-tz-card"));
+    productPhoto = imgEl ? imgEl.getAttribute("src") || "" : "";
+    productOrigPhoto = productPhoto;
+    productForm.reset();
+    productForm.elements.name.value = name;
+    productForm.elements.price.value = isFinite(price) && price > 0 ? String(price) : "";
+    productForm.elements.qty.value =
+      stock !== null && isFinite(stock) && stock >= 0 ? String(Math.round(stock)) : "1";
+    productForm.elements.category.value =
+      PRODUCT_CATEGORIES.indexOf(category) !== -1 ? category : PRODUCT_CATEGORIES[0];
+    productForm.elements.description.value = descEl ? descEl.textContent.trim() : "";
+    productDialog.querySelector(".tzprod__title").textContent = "Edit product";
+    productDialog.querySelector('[data-tzprod="remove"]').hidden = true;
+    setProductStatus("");
+    renderProductThumb();
+    productDialog.showModal();
+    productForm.elements.name.focus();
+  }
+
   function openProductDialog(id) {
     if (!editing || !onShopPage()) return;
     ensureProductDialog();
     var product = id ? findAddedProduct(id) : null;
     productEditId = product ? product.id : "";
+    productCardIndex = null;
     productPhoto = product ? product.image : "";
     productOrigPhoto = productPhoto;
     productForm.reset();
@@ -1513,7 +1608,12 @@
     productDialog.querySelector(".tzprod__title").textContent = product
       ? "Edit product"
       : "Add product";
-    productDialog.querySelector('[data-tzprod="remove"]').hidden = !product;
+    var removeBtn = productDialog.querySelector('[data-tzprod="remove"]');
+    removeBtn.hidden = !product;
+    removeBtn.textContent =
+      product && /^p-card\d+$/.test(product.id)
+        ? "Restore original card"
+        : "Remove product";
     setProductStatus("");
     renderProductThumb();
     productDialog.showModal();
@@ -1523,6 +1623,7 @@
   function closeProductDialog() {
     if (productDialog && productDialog.open) productDialog.close();
     productEditId = "";
+    productCardIndex = null;
   }
 
   function saveProduct(event) {
@@ -1564,7 +1665,13 @@
     }
 
     var wasEditing = !!productEditId;
-    if (!wasEditing && addedProducts.length >= MAX_PRODUCTS) {
+    var id = wasEditing
+      ? productEditId
+      : productCardIndex !== null
+        ? "p-card" + productCardIndex
+        : newProductId();
+    var wasAdopting = !wasEditing && productCardIndex !== null;
+    if (!wasEditing && !findAddedProduct(id) && addedProducts.length >= MAX_PRODUCTS) {
       setProductStatus(
         "You can add up to " + MAX_PRODUCTS + " products. Remove one first.",
         "error"
@@ -1573,7 +1680,7 @@
     }
 
     var product = {
-      id: wasEditing ? productEditId : newProductId(),
+      id: id,
       name: name.slice(0, 80),
       price: Math.round(price * 100) / 100,
       category: category,
@@ -1582,7 +1689,7 @@
       image: productPhoto,
       href: productHref(name)
     };
-    var index = wasEditing ? indexOfProduct(product.id) : -1;
+    var index = wasEditing || wasAdopting ? indexOfProduct(product.id) : -1;
     if (index === -1) addedProducts.push(product);
     else addedProducts[index] = product;
 
@@ -1590,7 +1697,7 @@
     renderProducts();
     closeProductDialog();
     setStatus(
-      (wasEditing ? "Product updated" : "Product added") +
+      (wasEditing || wasAdopting ? "Product updated" : "Product added") +
         " — press Publish to put it on the live site.",
       "ok"
     );
@@ -1599,9 +1706,16 @@
   function removeProduct() {
     var product = findAddedProduct(productEditId);
     if (!product) return;
+    var isOriginal = /^p-card\d+$/.test(product.id);
     if (
       !window.confirm(
-        'Remove "' + product.name + '" from the shop? Press Publish to apply it to the live site.'
+        isOriginal
+          ? 'Stop using the managed version of "' +
+              product.name +
+              '"? The original card comes back. Press Publish to apply it to the live site.'
+          : 'Remove "' +
+              product.name +
+              '" from the shop? Press Publish to apply it to the live site.'
       )
     ) {
       return;
@@ -1611,7 +1725,11 @@
     writeProductDraft();
     renderProducts();
     closeProductDialog();
-    setStatus("Product removed — press Publish to update the live site.", "ok");
+    setStatus(
+      (isOriginal ? "Original card restored" : "Product removed") +
+        " — press Publish to update the live site.",
+      "ok"
+    );
   }
 
   function openDetails() {

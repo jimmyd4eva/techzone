@@ -365,8 +365,13 @@ html.tz-editing a[href]:hover {
   display: none;
 }
 
-html.tz-editing .product-card[data-tz-product] {
+html.tz-editing .product-card[data-tz-product],
+html.tz-editing .product-card[data-tz-card] {
   position: relative;
+}
+
+.product-card.is-managed-source {
+  display: none !important;
 }
 
 html.tz-editing .tzprod-edit {

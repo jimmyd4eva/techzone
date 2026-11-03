@@ -146,6 +146,10 @@
       activeFilter = category;
 
       document.querySelectorAll("[data-category]").forEach(function (card) {
+        if (card.classList.contains("is-managed-source")) {
+          card.classList.add("is-hidden");
+          return;
+        }
         var show = category === "all" || card.getAttribute("data-category") === category;
         card.classList.toggle("is-hidden", !show);
         if (show) visible += 1;
