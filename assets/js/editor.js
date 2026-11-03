@@ -916,8 +916,67 @@
         setStatus("Photo replaced — saved in this browser.", "ok");
       })
       .catch(function () {
-        setStatus("That photo could not be read. Try a JPG or PNG.");
+        setStatus("That photo format is not supported. Save it as a JPG or PNG and try again.");
       });
+  }
+
+  var PUBLISH_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  var MAX_PUBLISH_BYTES = 2500000;
+
+  function dataUrlMime(url) {
+    var match = /^data:([^;,]+)/.exec(url || "");
+    return match ? match[1].toLowerCase() : "";
+  }
+
+  function dataUrlBytes(url) {
+    var comma = (url || "").indexOf(",");
+    if (comma === -1) return 0;
+    var body = (url || "").slice(comma + 1);
+    if (url.slice(0, comma).indexOf("base64") === -1) return body.length;
+    return Math.floor((body.replace(/\s+/g, "").length * 3) / 4);
+  }
+
+  function renderImage(img, type) {
+    var max = 1600;
+    var scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    var ctx = canvas.getContext("2d");
+    if (type === "image/jpeg") {
+      ctx.fillStyle = "#0a0b0d";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    var out = canvas.toDataURL(type, 0.85);
+    if (type === "image/png" && dataUrlBytes(out) > MAX_PUBLISH_BYTES) {
+      ctx.globalCompositeOperation = "destination-over";
+      ctx.fillStyle = "#0a0b0d";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      out = canvas.toDataURL("image/jpeg", 0.82);
+    }
+    return out;
+  }
+
+  function prepareDataUrl(url) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onerror = function () {
+        resolve(null);
+      };
+      img.onload = function () {
+        if (!img.naturalWidth || !img.naturalHeight) {
+          resolve(null);
+          return;
+        }
+        try {
+          resolve(renderImage(img, "image/jpeg"));
+        } catch (err) {
+          resolve(null);
+        }
+      };
+      img.src = url;
+    });
   }
 
   function encodeImage(file) {
@@ -926,14 +985,20 @@
       reader.onerror = reject;
       reader.onload = function () {
         var original = reader.result;
-        if (file.type === "image/svg+xml" || file.size < 300 * 1024) {
+        var type = (file.type || dataUrlMime(original)).toLowerCase();
+        var supported = PUBLISH_IMAGE_TYPES.indexOf(type) !== -1;
+        if (supported && file.size < 300 * 1024) {
           resolve(original);
           return;
         }
 
         var img = new Image();
         img.onerror = function () {
-          resolve(original);
+          if (supported && file.size <= MAX_PUBLISH_BYTES) {
+            resolve(original);
+          } else {
+            reject(new Error("unsupported image format"));
+          }
         };
         img.onload = function () {
           var max = 1600;
@@ -941,26 +1006,20 @@
             1,
             max / Math.max(img.naturalWidth, img.naturalHeight)
           );
-          if (scale === 1 && file.size < 900 * 1024) {
+          if (supported && scale === 1 && file.size < 900 * 1024) {
             resolve(original);
             return;
           }
 
-          var canvas = document.createElement("canvas");
-          canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
-          canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
-          var ctx = canvas.getContext("2d");
-          var type = file.type === "image/png" ? "image/png" : "image/jpeg";
-          if (type === "image/jpeg") {
-            ctx.fillStyle = "#0a0b0d";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-          }
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
           try {
-            resolve(canvas.toDataURL(type, 0.85));
+            var keepPng = type === "image/png" || type === "image/svg+xml";
+            resolve(renderImage(img, keepPng ? "image/png" : "image/jpeg"));
           } catch (err) {
-            resolve(original);
+            if (supported && file.size <= MAX_PUBLISH_BYTES) {
+              resolve(original);
+            } else {
+              reject(err);
+            }
           }
         };
         img.src = original;
@@ -1192,6 +1251,35 @@
     };
   }
 
+  function prepareImagesForPublish(map) {
+    var out = {};
+    var skipped = 0;
+    return Object.keys(map || {})
+      .reduce(function (chain, key) {
+        return chain.then(function () {
+          var value = map[key];
+          if (typeof value !== "string" || value.indexOf("data:image/") !== 0) {
+            out[key] = value;
+            return;
+          }
+          if (
+            PUBLISH_IMAGE_TYPES.indexOf(dataUrlMime(value)) !== -1 &&
+            dataUrlBytes(value) <= MAX_PUBLISH_BYTES
+          ) {
+            out[key] = value;
+            return;
+          }
+          return prepareDataUrl(value).then(function (fixed) {
+            if (fixed) out[key] = fixed;
+            else skipped++;
+          });
+        });
+      }, Promise.resolve())
+      .then(function () {
+        return { images: out, skipped: skipped };
+      });
+  }
+
   function postPublish(body) {
     return fetchWithTimeout(
       PUBLISH_ENDPOINT + "?page=" + encodeURIComponent(FILE),
@@ -1264,22 +1352,41 @@
           );
         });
     if (!publishedKnown) setStatus("Checking the live site…");
+    var skippedPhotos = 0;
     ready
       .then(function () {
+        setStatus("Preparing photos…");
+        var merged = mergeForPublish();
+        return prepareImagesForPublish(merged.images).then(function (prepared) {
+          skippedPhotos = prepared.skipped;
+          merged.images = prepared.images;
+          return merged;
+        });
+      })
+      .then(function (merged) {
         setStatus("Publishing to the live site…");
         return postPublish({
           action: "publish",
           page: FILE,
           pass: pass,
-          edits: mergeForPublish()
+          edits: merged
         });
       })
       .then(function (json) {
         published = normalize(json.edits);
         keepPass();
-        clearLocalEdits();
+        if (!skippedPhotos) clearLocalEdits();
         setPublishBusy(false);
-        setStatus("Published — open the site on your phone to check.", "ok");
+        if (skippedPhotos) {
+          setStatus(
+            "Published, but " +
+              skippedPhotos +
+              " photo could not be included. Save that photo as a JPG or PNG, replace it again, and publish.",
+            "error"
+          );
+        } else {
+          setStatus("Published — open the site on your phone to check.", "ok");
+        }
       })
       .catch(function (err) {
         setPublishBusy(false);

@@ -266,7 +266,7 @@ function clean_image_map($value, string $base, string $imgDir): array
         if (strpos($src, 'data:image/') === 0) {
             $stored = store_image($src, $base, $key, $imgDir);
             if ($stored === null) {
-                fail(422, 'A replacement photo could not be processed. Try a JPG or PNG.');
+                fail(422, 'That photo could not be included. Use a JPG, PNG, WebP or GIF under 3 MB.');
             }
             $src = $stored;
         } elseif (
