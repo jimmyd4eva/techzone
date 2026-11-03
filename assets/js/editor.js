@@ -1071,14 +1071,46 @@
     });
   }
 
+  function fetchWithTimeout(url, options, ms) {
+    var controller = window.AbortController ? new AbortController() : null;
+    var timer = null;
+    if (controller) {
+      options.signal = controller.signal;
+      timer = setTimeout(function () {
+        controller.abort();
+      }, ms);
+    }
+    return fetch(url, options).then(
+      function (response) {
+        if (timer) clearTimeout(timer);
+        return response;
+      },
+      function (err) {
+        if (timer) clearTimeout(timer);
+        if (err && err.name === "AbortError") {
+          var error = new Error(
+            "The site server did not respond. Your edits are still saved in this browser — try again in a few minutes."
+          );
+          error.timeout = true;
+          throw error;
+        }
+        throw err;
+      }
+    );
+  }
+
   function loadPublished() {
     if (!window.fetch) {
       return Promise.reject(new Error("This browser cannot load published edits."));
     }
-    return fetch(PUBLISH_ENDPOINT + "?page=" + encodeURIComponent(FILE), {
-      cache: "no-store",
-      credentials: "same-origin"
-    })
+    return fetchWithTimeout(
+      PUBLISH_ENDPOINT + "?page=" + encodeURIComponent(FILE),
+      {
+        cache: "no-store",
+        credentials: "same-origin"
+      },
+      8000
+    )
       .then(function (response) {
         if (!response.ok) {
           throw new Error("The site answered with " + response.status + ".");
@@ -1152,12 +1184,16 @@
   }
 
   function postPublish(body) {
-    return fetch(PUBLISH_ENDPOINT + "?page=" + encodeURIComponent(FILE), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(body)
-    }).then(function (response) {
+    return fetchWithTimeout(
+      PUBLISH_ENDPOINT + "?page=" + encodeURIComponent(FILE),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(body)
+      },
+      25000
+    ).then(function (response) {
       return response
         .json()
         .catch(function () {
@@ -1215,7 +1251,7 @@
       ? Promise.resolve()
       : loadPublished().catch(function () {
           throw new Error(
-            "Could not load the current published edits. Try again in a moment."
+            "The site server did not respond, so there was nothing to publish against. Your edits are still saved in this browser — try again in a few minutes."
           );
         });
     if (!publishedKnown) setStatus("Checking the live site…");
