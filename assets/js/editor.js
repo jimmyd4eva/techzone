@@ -578,10 +578,19 @@
           "click",
           function (event) {
             var editBtn = event.target.closest("[data-tzprod-edit]");
-            if (!editBtn) return;
-            event.preventDefault();
-            event.stopPropagation();
-            openProductDialog(editBtn.getAttribute("data-tzprod-edit"));
+            if (editBtn) {
+              event.preventDefault();
+              event.stopPropagation();
+              openProductDialog(editBtn.getAttribute("data-tzprod-edit"));
+              return;
+            }
+            if (!editing) return;
+            var card = event.target.closest("[data-tz-product]");
+            if (card && event.target.closest(".product-card__media")) {
+              event.preventDefault();
+              event.stopPropagation();
+              openProductDialog(card.getAttribute("data-tz-product"));
+            }
           },
           true
         );
