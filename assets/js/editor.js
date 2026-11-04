@@ -1592,8 +1592,7 @@
   }
 
   function activeProductCategory() {
-    var chip = document.querySelector('[data-filter][aria-pressed="true"]');
-    var category = chip ? chip.getAttribute("data-filter") : "";
+    var category = document.documentElement.getAttribute("data-tz-filter-chosen");
     return PRODUCT_CATEGORIES.indexOf(category) !== -1 ? category : "";
   }
 

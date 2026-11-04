@@ -139,7 +139,7 @@
   var emptyState = document.querySelector("[data-empty-state]");
 
   if (filterButtons.length && productCards.length) {
-    var activeFilter = "all";
+    var activeFilter = filterButtons[0].getAttribute("data-filter");
 
     function applyFilter(category) {
       var visible = 0;
@@ -150,7 +150,7 @@
           card.classList.add("is-hidden");
           return;
         }
-        var show = category === "all" || card.getAttribute("data-category") === category;
+        var show = card.getAttribute("data-category") === category;
         card.classList.toggle("is-hidden", !show);
         if (show) visible += 1;
       });
@@ -168,6 +168,10 @@
         filterButtons.forEach(function (btn) {
           btn.setAttribute("aria-pressed", String(btn === button));
         });
+        document.documentElement.setAttribute(
+          "data-tz-filter-chosen",
+          button.getAttribute("data-filter")
+        );
         applyFilter(button.getAttribute("data-filter"));
         button.scrollIntoView({
           inline: "center",
@@ -177,7 +181,7 @@
       });
     });
 
-    applyFilter("all");
+    applyFilter(activeFilter);
     document.addEventListener("tz:shop-updated", function () {
       applyFilter(activeFilter);
     });
