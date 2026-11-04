@@ -57,6 +57,7 @@
   var STORE_KEY = "techzone-edits:" + location.pathname;
   var IMAGE_CACHE_KEY = "techzone-published-images:" + location.pathname;
   var PRODUCTS_KEY = "techzone-products:" + location.pathname;
+  var PRODUCT_CATEGORY_KEY = "techzone-product-category";
   var PASS_KEY = "techzone-publish-pass";
   var PUBLISH_ENDPOINT = "api/publish.php";
   var PRODUCT_CATEGORIES = [
@@ -87,6 +88,7 @@
   var productCardIndex = null;
   var productPhoto = "";
   var productOrigPhoto = "";
+  var lastProductCategory = "";
   var productStatusEl = null;
   var productThumbEl = null;
   var productFileInput = null;
@@ -1251,11 +1253,9 @@
     hasProductDraft = true;
     try {
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify(addedProducts));
+      return true;
     } catch (err) {
-      setStatus(
-        "These products are too large to keep in this browser. Publish now to save them.",
-        "error"
-      );
+      return false;
     }
   }
 
@@ -1591,6 +1591,30 @@
     productForm.elements.name.focus();
   }
 
+  function activeProductCategory() {
+    var chip = document.querySelector('[data-filter][aria-pressed="true"]');
+    var category = chip ? chip.getAttribute("data-filter") : "";
+    return PRODUCT_CATEGORIES.indexOf(category) !== -1 ? category : "";
+  }
+
+  function readLastProductCategory() {
+    try {
+      var value = localStorage.getItem(PRODUCT_CATEGORY_KEY);
+      return PRODUCT_CATEGORIES.indexOf(value) !== -1 ? value : "";
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function rememberProductCategory(category) {
+    lastProductCategory = category;
+    try {
+      localStorage.setItem(PRODUCT_CATEGORY_KEY, category);
+    } catch (err) {
+      /* storage unavailable */
+    }
+  }
+
   function openProductDialog(id) {
     if (!editing || !onShopPage()) return;
     ensureProductDialog();
@@ -1605,7 +1629,10 @@
     productForm.elements.qty.value = product ? String(product.qty) : "1";
     productForm.elements.category.value = product
       ? product.category
-      : PRODUCT_CATEGORIES[0];
+      : activeProductCategory() ||
+        lastProductCategory ||
+        readLastProductCategory() ||
+        PRODUCT_CATEGORIES[0];
     productForm.elements.description.value = product
       ? product.description
       : "";
@@ -1683,6 +1710,7 @@
       return;
     }
 
+    rememberProductCategory(category);
     var product = {
       id: id,
       name: name.slice(0, 80),
@@ -1697,14 +1725,28 @@
     if (index === -1) addedProducts.push(product);
     else addedProducts[index] = product;
 
-    writeProductDraft();
+    var draftSaved = writeProductDraft();
     renderProducts();
     closeProductDialog();
-    setStatus(
-      (wasEditing || wasAdopting ? "Product updated" : "Product added") +
-        " — press Publish to put it on the live site.",
-      "ok"
-    );
+    var categoryLabel = PRODUCT_CATEGORY_LABELS[category] || category;
+    if (draftSaved) {
+      setStatus(
+        (wasEditing || wasAdopting ? "Product updated in " : "Product added to ") +
+          categoryLabel +
+          " — press Publish to put it on the live site.",
+        "ok"
+      );
+    } else {
+      setStatus(
+        "Product saved in this tab, but the browser is out of storage. " +
+          "Press Publish now — it will be lost if you close this page.",
+        "error"
+      );
+    }
+    var savedCard = document.querySelector('[data-tz-product="' + id + '"]');
+    if (savedCard && !savedCard.classList.contains("is-hidden")) {
+      savedCard.scrollIntoView({ block: "center" });
+    }
   }
 
   function removeProduct() {
@@ -1726,14 +1768,22 @@
     }
     var index = indexOfProduct(product.id);
     if (index !== -1) addedProducts.splice(index, 1);
-    writeProductDraft();
+    var draftSaved = writeProductDraft();
     renderProducts();
     closeProductDialog();
-    setStatus(
-      (isOriginal ? "Original card restored" : "Product removed") +
-        " — press Publish to update the live site.",
-      "ok"
-    );
+    if (draftSaved) {
+      setStatus(
+        (isOriginal ? "Original card restored" : "Product removed") +
+          " — press Publish to update the live site.",
+        "ok"
+      );
+    } else {
+      setStatus(
+        "Change saved in this tab, but the browser is out of storage. " +
+          "Press Publish now — it will be lost if you close this page.",
+        "error"
+      );
+    }
   }
 
   function openDetails() {
