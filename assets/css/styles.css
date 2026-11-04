@@ -1930,11 +1930,11 @@ body.no-scroll {
   font-variant-numeric: tabular-nums;
 }
 
-.product-grid--shop .product-card {
+.product-card {
   cursor: pointer;
 }
 
-html.tz-editing .product-grid--shop .product-card {
+html.tz-editing .product-card {
   cursor: auto;
 }
 
