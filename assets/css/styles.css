@@ -1880,7 +1880,8 @@ body.no-scroll {
   flex-wrap: nowrap;
   gap: 0.45rem;
   overflow-x: auto;
-  padding-bottom: 2px;
+  padding: 24px 16px;
+  margin: -24px -16px;
   scrollbar-width: none;
 }
 
@@ -1901,20 +1902,23 @@ body.no-scroll {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text);
+  box-shadow: 0 0 6px rgba(255, 214, 10, 0.55), 0 0 18px rgba(255, 214, 10, 0.35), 0 0 34px rgba(255, 214, 10, 0.18);
   transition: color 0.25s var(--ease), border-color 0.25s var(--ease),
-    background-color 0.25s var(--ease);
+    background-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 
 .chip:hover {
   color: var(--accent-bright);
   border-color: var(--accent-bright);
   background: rgba(236, 61, 79, 0.08);
+  box-shadow: 0 0 8px rgba(255, 214, 10, 0.8), 0 0 22px rgba(255, 214, 10, 0.5), 0 0 44px rgba(255, 214, 10, 0.26);
 }
 
 .chip[aria-pressed="true"] {
   color: var(--accent-bright);
   border-color: var(--accent-bright);
   background: var(--accent-soft);
+  box-shadow: 0 0 9px rgba(255, 214, 10, 0.95), 0 0 24px rgba(255, 214, 10, 0.58), 0 0 48px rgba(255, 214, 10, 0.3);
 }
 
 .shop-count {
