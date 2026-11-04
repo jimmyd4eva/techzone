@@ -1930,9 +1930,16 @@ body.no-scroll {
   font-variant-numeric: tabular-nums;
 }
 
+.product-grid--shop .product-card {
+  cursor: pointer;
+}
+
+html.tz-editing .product-grid--shop .product-card {
+  cursor: auto;
+}
+
 .pdetail {
-  width: min(920px, calc(100vw - 1.5rem));
-  max-height: calc(100dvh - 1.5rem);
+  width: min(920px, calc(100vw - 1.5rem));  max-height: calc(100dvh - 1.5rem);
   margin: auto;
   padding: 0;
   overflow: hidden;

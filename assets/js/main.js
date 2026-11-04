@@ -341,10 +341,9 @@
   document.addEventListener("click", function (event) {
     if (document.documentElement.classList.contains("tz-editing")) return;
     if (!event.target.closest) return;
-    var media = event.target.closest(".product-grid--shop .product-card__media");
-    if (!media) return;
-    var card = media.closest(".product-card");
+    var card = event.target.closest(".product-grid--shop .product-card");
     if (!card) return;
+    if (event.target.closest("button, [data-editor-ui]")) return;
     event.preventDefault();
     openProductDetails(card);
   });
