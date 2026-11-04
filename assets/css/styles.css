@@ -881,6 +881,10 @@ body.no-scroll {
   pointer-events: none;
 }
 
+.product-card[data-category="jewelry-perfume"] .product-card__media {
+  padding: 6%;
+}
+
 .product-card:hover .product-card__media img {
   transform: scale(1.045);
 }
