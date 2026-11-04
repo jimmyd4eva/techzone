@@ -178,6 +178,177 @@
     });
   }
 
+  /* ---------- Product details ---------- */
+
+  var detailDialog = null;
+  var detailMedia = null;
+  var detailName = null;
+  var detailCategory = null;
+  var detailPrice = null;
+  var detailStock = null;
+  var detailDesc = null;
+  var detailAdd = null;
+  var detailEnquire = null;
+  var detailCard = null;
+
+  function buildDetailDialog() {
+    detailDialog = document.createElement("dialog");
+    detailDialog.className = "pdetail";
+    detailDialog.setAttribute("aria-labelledby", "pdetail-name");
+
+    var panel = document.createElement("div");
+    panel.className = "pdetail__panel";
+
+    detailMedia = document.createElement("div");
+    detailMedia.className = "pdetail__media";
+    panel.appendChild(detailMedia);
+
+    var body = document.createElement("div");
+    body.className = "pdetail__body";
+
+    detailCategory = document.createElement("p");
+    detailCategory.className = "pdetail__eyebrow";
+    body.appendChild(detailCategory);
+
+    detailName = document.createElement("h2");
+    detailName.className = "pdetail__name";
+    detailName.id = "pdetail-name";
+    body.appendChild(detailName);
+
+    detailPrice = document.createElement("p");
+    detailPrice.className = "pdetail__price";
+    body.appendChild(detailPrice);
+
+    detailStock = document.createElement("p");
+    detailStock.className = "pdetail__stock";
+    body.appendChild(detailStock);
+
+    detailDesc = document.createElement("p");
+    detailDesc.className = "pdetail__desc";
+    body.appendChild(detailDesc);
+
+    var actions = document.createElement("div");
+    actions.className = "pdetail__actions";
+
+    detailAdd = document.createElement("button");
+    detailAdd.type = "button";
+    detailAdd.className = "btn btn--primary btn--sm cart-add";
+    detailAdd.textContent = "Add to cart";
+    detailAdd.addEventListener("click", function () {
+      if (!detailCard) return;
+      var source = detailCard.querySelector("[data-add-to-cart]");
+      if (!source || source.disabled) return;
+      source.click();
+      var label = detailAdd.getAttribute("data-label") || "Add to cart";
+      detailAdd.textContent = "Added to cart";
+      detailAdd.classList.add("is-added");
+      clearTimeout(detailAdd._timer);
+      detailAdd._timer = setTimeout(function () {
+        detailAdd.textContent = label;
+        detailAdd.classList.remove("is-added");
+      }, 1400);
+    });
+    actions.appendChild(detailAdd);
+
+    detailEnquire = document.createElement("a");
+    detailEnquire.className = "btn btn--ghost btn--sm";
+    detailEnquire.textContent = "Ask about this product";
+    actions.appendChild(detailEnquire);
+
+    body.appendChild(actions);
+    panel.appendChild(body);
+
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "pdetail__close";
+    close.setAttribute("aria-label", "Close product details");
+    close.innerHTML = "&times;";
+    close.addEventListener("click", function () {
+      detailDialog.close();
+    });
+    panel.appendChild(close);
+
+    detailDialog.appendChild(panel);
+    detailDialog.addEventListener("click", function (event) {
+      if (event.target === detailDialog) detailDialog.close();
+    });
+    document.body.appendChild(detailDialog);
+  }
+
+  function openProductDetails(card) {
+    if (!detailDialog) buildDetailDialog();
+    detailCard = card;
+
+    var media = card.querySelector(".product-card__media");
+    var img = card.querySelector(".product-card__media img");
+    var nameText = (card.querySelector(".product-card__name") || {}).textContent || "";
+    detailName.textContent = nameText.replace(/\s+/g, " ").trim();
+
+    var categoryEl = card.querySelector(".product-card__meta span");
+    detailCategory.textContent = categoryEl ? categoryEl.textContent.trim() : "";
+
+    var priceEl = card.querySelector(".product-card__price");
+    detailPrice.textContent = priceEl ? priceEl.textContent.trim() : "";
+    detailPrice.hidden = !priceEl;
+
+    var stockEl = card.querySelector(".product-card__stock");
+    detailStock.textContent = stockEl ? stockEl.textContent.trim() : "";
+    detailStock.hidden = !stockEl;
+    detailStock.classList.toggle(
+      "is-out",
+      !!stockEl && stockEl.classList.contains("is-out")
+    );
+
+    var descEl = card.querySelector(".product-card__desc");
+    detailDesc.textContent = descEl ? descEl.textContent.trim() : "";
+    detailDesc.hidden = !descEl;
+
+    detailMedia.innerHTML = "";
+    detailMedia.classList.toggle("pdetail__media--placeholder", !img);
+    if (img) {
+      var big = document.createElement("img");
+      big.src = img.getAttribute("src");
+      big.alt = img.getAttribute("alt") || detailName.textContent;
+      detailMedia.appendChild(big);
+    } else {
+      var initial = document.createElement("span");
+      initial.setAttribute("aria-hidden", "true");
+      initial.textContent = (detailName.textContent.charAt(0) || "?").toUpperCase();
+      detailMedia.appendChild(initial);
+    }
+
+    var source = card.querySelector("[data-add-to-cart]");
+    detailAdd.hidden = !source;
+    if (source) {
+      var soldOut = source.disabled;
+      detailAdd.disabled = soldOut;
+      detailAdd.classList.toggle("is-sold-out", soldOut);
+      detailAdd.textContent = soldOut ? "Sold out" : "Add to cart";
+      detailAdd.setAttribute("data-label", detailAdd.textContent);
+    }
+
+    var href = media ? media.getAttribute("href") : "";
+    if (!href) {
+      var cta = card.querySelector(".product-card__cta");
+      href = cta ? cta.getAttribute("href") : "";
+    }
+    detailEnquire.hidden = !href;
+    if (href) detailEnquire.setAttribute("href", href);
+
+    detailDialog.showModal();
+  }
+
+  document.addEventListener("click", function (event) {
+    if (document.documentElement.classList.contains("tz-editing")) return;
+    if (!event.target.closest) return;
+    var media = event.target.closest(".product-grid--shop .product-card__media");
+    if (!media) return;
+    var card = media.closest(".product-card");
+    if (!card) return;
+    event.preventDefault();
+    openProductDetails(card);
+  });
+
   /* ---------- Forms ---------- */
 
   function setFieldError(input, message) {
