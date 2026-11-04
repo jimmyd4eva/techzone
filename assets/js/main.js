@@ -169,6 +169,11 @@
           btn.setAttribute("aria-pressed", String(btn === button));
         });
         applyFilter(button.getAttribute("data-filter"));
+        button.scrollIntoView({
+          inline: "center",
+          block: "nearest",
+          behavior: reduceMotion ? "auto" : "smooth"
+        });
       });
     });
 
