@@ -30,7 +30,8 @@
   --container: 1180px;
   --gutter: clamp(1.25rem, 4vw, 2rem);
   --section-y: clamp(4.5rem, 9vw, 8.5rem);
-  --header-h: 76px;
+  --nav-h: 76px;
+  --header-h: calc(var(--nav-h) + 56px);
 
   --ease: cubic-bezier(0.22, 0.68, 0.28, 1);
   --radius: 4px;
@@ -402,9 +403,9 @@ p {
   position: fixed;
   inset: 0 0 auto;
   z-index: 100;
-  height: var(--header-h);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   border-bottom: 1px solid transparent;
   transition: background-color 0.35s var(--ease), border-color 0.35s var(--ease),
     backdrop-filter 0.35s var(--ease);
@@ -422,6 +423,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
+  height: var(--nav-h);
 }
 
 .brand {
@@ -758,23 +760,17 @@ body.no-scroll {
   animation: pulse 2.6s infinite;
 }
 
-/* ---------- Home search ---------- */
+/* ---------- Site search ---------- */
 
-.home-search {
-  position: absolute;
-  top: calc(var(--header-h) + 1.25rem);
-  left: 0;
-  right: 0;
-  z-index: 3;
-}
-
-.home-search__inner {
+.site-search {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
+  padding-bottom: 0.85rem;
 }
 
-.home-search__field {
+.site-search__field {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -791,19 +787,19 @@ body.no-scroll {
   transition: border-color 0.25s var(--ease), background-color 0.25s var(--ease);
 }
 
-.home-search__field:focus-within {
+.site-search__field:focus-within {
   border-color: var(--accent);
   background: rgba(7, 8, 10, 0.8);
   color: var(--muted);
 }
 
-.home-search__field svg {
+.site-search__field svg {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
 }
 
-.home-search__field input {
+.site-search__field input {
   flex: 1;
   min-width: 0;
   border: 0;
@@ -815,20 +811,20 @@ body.no-scroll {
   outline: none;
 }
 
-.home-search__field input::placeholder {
+.site-search__field input::placeholder {
   color: var(--muted-dim);
 }
 
-.home-search__field input::-webkit-search-cancel-button {
+.site-search__field input::-webkit-search-cancel-button {
   -webkit-appearance: none;
 }
 
-.home-search__btn {
+.site-search__btn {
   flex-shrink: 0;
 }
 
 @media (max-width: 620px) {
-  .home-search__field {
+  .site-search__field {
     width: 100%;
   }
 }
@@ -2947,7 +2943,7 @@ html.reveal-ready [data-reveal].is-in {
 
 @media (max-width: 900px) {
   :root {
-    --header-h: 66px;
+    --nav-h: 66px;
   }
 
   .nav,

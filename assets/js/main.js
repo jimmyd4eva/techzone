@@ -15,6 +15,35 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
+  /* ---------- Site search ---------- */
+
+  if (header && !header.querySelector(".site-search")) {
+    var searchForm = document.createElement("form");
+    searchForm.className = "site-search container";
+    searchForm.setAttribute("role", "search");
+    searchForm.setAttribute("action", "shop.html");
+    searchForm.setAttribute("method", "get");
+    searchForm.setAttribute("data-editor-ui", "");
+    searchForm.setAttribute("data-no-edit", "");
+    searchForm.innerHTML =
+      '<label class="site-search__field">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>' +
+      '<input type="search" name="q" aria-label="Search products" placeholder="Search the shop — perfume, phones, cables" autocomplete="off">' +
+      "</label>" +
+      '<button class="btn btn--primary btn--sm site-search__btn" type="submit">Search</button>';
+
+    try {
+      var searchParam = new URLSearchParams(window.location.search).get("q");
+      if (searchParam) {
+        searchForm.querySelector("input").value = searchParam.trim().slice(0, 80);
+      }
+    } catch (err) {
+      /* ignore malformed query strings */
+    }
+
+    header.appendChild(searchForm);
+  }
+
   /* ---------- Mobile menu ---------- */
 
   var toggle = document.querySelector("[data-nav-toggle]");
@@ -192,6 +221,8 @@
     function clearSearch() {
       searchQuery = "";
       searchLabel = "";
+      var searchInput = document.querySelector(".site-search input[name='q']");
+      if (searchInput) searchInput.value = "";
     }
 
     filterButtons.forEach(function (button) {
