@@ -44,6 +44,34 @@
     header.appendChild(searchForm);
   }
 
+  /* ---------- Marquee ---------- */
+
+  var marqueeGroups = document.querySelectorAll(".marquee__track .marquee__group");
+
+  if (marqueeGroups.length > 1) {
+    var marqueeSource = marqueeGroups[0];
+    var marqueeCopies = Array.prototype.slice.call(marqueeGroups, 1);
+
+    var syncMarquee = function () {
+      var sourceSpans = marqueeSource.querySelectorAll("span");
+      marqueeCopies.forEach(function (group) {
+        var spans = group.querySelectorAll("span");
+        for (var i = 0; i < spans.length && i < sourceSpans.length; i++) {
+          if (spans[i].textContent !== sourceSpans[i].textContent) {
+            spans[i].textContent = sourceSpans[i].textContent;
+          }
+        }
+      });
+    };
+
+    new MutationObserver(syncMarquee).observe(marqueeSource, {
+      subtree: true,
+      childList: true,
+      characterData: true
+    });
+    syncMarquee();
+  }
+
   /* ---------- Mobile menu ---------- */
 
   var toggle = document.querySelector("[data-nav-toggle]");
