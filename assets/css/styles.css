@@ -622,11 +622,15 @@ p {
   color: var(--accent-bright);
 }
 
-.mobile-menu nav a span {
+.mobile-menu nav a > span:first-child {
   font-family: var(--font-sans);
   font-size: 0.64rem;
   letter-spacing: 0.2em;
   color: var(--accent-dim);
+}
+
+.mobile-menu__label {
+  flex: 1;
 }
 
 .mobile-menu__foot {

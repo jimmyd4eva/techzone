@@ -72,6 +72,62 @@
     syncMarquee();
   }
 
+  /* ---------- Mobile menu labels ---------- */
+
+  var desktopNav = document.querySelector(".site-header .nav");
+  var mobileNav = document.querySelector(".mobile-menu nav");
+
+  if (desktopNav && mobileNav) {
+    var desktopLinks = {};
+    var mobileLabels = {};
+
+    Array.prototype.forEach.call(desktopNav.querySelectorAll("a[href]"), function (link) {
+      desktopLinks[link.getAttribute("href")] = link;
+    });
+
+    Array.prototype.forEach.call(mobileNav.querySelectorAll("a[href]"), function (link) {
+      var label = link.querySelector(".mobile-menu__label");
+      if (label) mobileLabels[link.getAttribute("href")] = label;
+    });
+
+    var setLabel = function (el, value) {
+      if (!el || el.textContent === value) return;
+      el.textContent = value;
+      if (document.documentElement.classList.contains("tz-editing")) {
+        el.dispatchEvent(new Event("input"));
+      }
+    };
+
+    Object.keys(mobileLabels).forEach(function (href) {
+      var desktopLink = desktopLinks[href];
+      var mobileLabel = mobileLabels[href];
+      if (!desktopLink) return;
+
+      var syncFromDesktop = function () {
+        setLabel(mobileLabel, desktopLink.textContent);
+      };
+
+      new MutationObserver(syncFromDesktop).observe(desktopLink, {
+        subtree: true,
+        childList: true,
+        characterData: true
+      });
+
+      new MutationObserver(function () {
+        if (document.documentElement.classList.contains("tz-editing")) {
+          setLabel(desktopLink, mobileLabel.textContent);
+        }
+        syncFromDesktop();
+      }).observe(mobileLabel, {
+        subtree: true,
+        childList: true,
+        characterData: true
+      });
+
+      syncFromDesktop();
+    });
+  }
+
   /* ---------- Mobile menu ---------- */
 
   var toggle = document.querySelector("[data-nav-toggle]");

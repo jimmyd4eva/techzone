@@ -148,7 +148,7 @@
       if (el.closest("[data-editor-ui]")) continue;
       if (el.closest("[data-tz-product]")) continue;
       if (el.closest("svg")) continue;
-      if (el.closest('[aria-hidden="true"]')) continue;
+      if (el.closest('[aria-hidden="true"]') && !el.closest("[data-tz-editable]")) continue;
       if (el.classList.contains("skip-link")) continue;
       if (el.hasAttribute("data-no-edit")) continue;
 
