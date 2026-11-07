@@ -137,9 +137,22 @@
   var productCards = document.querySelectorAll("[data-category]");
   var countEl = document.querySelector("[data-result-count]");
   var emptyState = document.querySelector("[data-empty-state]");
+  var searchQuery = "";
+  var searchLabel = "";
+
+  try {
+    searchLabel = (new URLSearchParams(window.location.search).get("q") || "")
+      .trim()
+      .slice(0, 80);
+  } catch (err) {
+    searchLabel = "";
+  }
+  searchQuery = searchLabel.toLowerCase();
 
   if (filterButtons.length && productCards.length) {
-    var activeFilter = filterButtons[0].getAttribute("data-filter");
+    var activeFilter = searchQuery
+      ? "__search"
+      : filterButtons[0].getAttribute("data-filter");
 
     function applyFilter(category) {
       var visible = 0;
@@ -150,21 +163,40 @@
           card.classList.add("is-hidden");
           return;
         }
-        var show = card.getAttribute("data-category") === category;
+        var inCategory =
+          category === "__search" ||
+          card.getAttribute("data-category") === category;
+        var matches =
+          !searchQuery ||
+          card.textContent.toLowerCase().indexOf(searchQuery) !== -1;
+        var show = inCategory && matches;
         card.classList.toggle("is-hidden", !show);
         if (show) visible += 1;
       });
 
       if (countEl) {
-        countEl.textContent =
-          visible === 1 ? "Showing 1 piece" : "Showing " + visible + " pieces";
+        if (searchQuery) {
+          countEl.textContent =
+            visible === 1
+              ? "1 result for “" + searchLabel + "”"
+              : visible + " results for “" + searchLabel + "”";
+        } else {
+          countEl.textContent =
+            visible === 1 ? "Showing 1 piece" : "Showing " + visible + " pieces";
+        }
       }
 
       if (emptyState) emptyState.hidden = visible > 0;
     }
 
+    function clearSearch() {
+      searchQuery = "";
+      searchLabel = "";
+    }
+
     filterButtons.forEach(function (button) {
       button.addEventListener("click", function () {
+        clearSearch();
         filterButtons.forEach(function (btn) {
           btn.setAttribute("aria-pressed", String(btn === button));
         });
@@ -180,6 +212,12 @@
         });
       });
     });
+
+    if (searchQuery) {
+      filterButtons.forEach(function (btn) {
+        btn.setAttribute("aria-pressed", "false");
+      });
+    }
 
     applyFilter(activeFilter);
     document.addEventListener("tz:shop-updated", function () {
