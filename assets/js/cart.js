@@ -184,6 +184,11 @@
       var cta = card.querySelector(".product-card__cta");
       var nameEl = card.querySelector(".product-card__name");
       if (!body || !cta || !nameEl) continue;
+      var priceEl = card.querySelector(".product-card__price");
+      var price = priceEl
+        ? parseFloat((priceEl.textContent || "").replace(/,/g, "").replace(/[^0-9.]/g, ""))
+        : 0;
+      if (!isFinite(price) || price <= 0) continue;
       var productName = nameEl.textContent.replace(/\s+/g, " ").trim();
       var stock = cardStock(card);
 
