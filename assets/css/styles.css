@@ -956,9 +956,12 @@ body.no-scroll {
   pointer-events: none;
 }
 
-.product-card[data-category="jewelry-perfume"] .product-card__media,
-.product-card[data-category="random-stuff"] .product-card__media {
+.product-card[data-category="jewelry-perfume"] .product-card__media {
   padding: 16%;
+}
+
+.product-card[data-category="random-stuff"] .product-card__media {
+  padding: 26%;
 }
 
 .product-card:hover .product-card__media img {
