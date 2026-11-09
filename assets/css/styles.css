@@ -957,7 +957,7 @@ body.no-scroll {
 }
 
 .product-card[data-category="jewelry-perfume"] .product-card__media {
-  padding: 6%;
+  padding: 16%;
 }
 
 .product-card:hover .product-card__media img {
