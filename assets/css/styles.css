@@ -1351,6 +1351,76 @@ body.no-scroll {
   text-align: center;
 }
 
+/* ---------- TechZone TV + partner poster ---------- */
+
+.split--tv {
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+}
+
+.tv-media {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.25rem, 2.6vw, 2.25rem);
+}
+
+.tv-media .film {
+  min-width: 0;
+}
+
+.poster {
+  margin: 0;
+  min-width: 0;
+}
+
+.poster__frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #0a1c33 center / cover no-repeat;
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+
+.poster__frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  filter: blur(26px) brightness(0.5) saturate(1.25);
+  transform: scale(1.15);
+}
+
+.poster__frame img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.poster__frame:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 44px 90px rgba(0, 0, 0, 0.6);
+}
+
+.poster__frame:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.poster figcaption {
+  margin-top: 0.9rem;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  color: var(--muted-dim);
+  text-align: center;
+}
+
 /* ---------- Shop photo carousel ---------- */
 
 .rail-box {
@@ -3089,6 +3159,21 @@ html.reveal-ready [data-reveal].is-in {
 
   .marquee__group span {
     font-size: 0.62rem;
+  }
+
+  .tv-media {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 2rem;
+  }
+
+  .tv-media .film {
+    max-width: 320px;
+  }
+
+  .poster {
+    width: 100%;
+    max-width: 340px;
   }
 
   .product-grid,

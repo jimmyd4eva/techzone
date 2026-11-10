@@ -56,7 +56,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Inter:wght@300;400;500;600&display=swap">
-  <link rel="stylesheet" href="assets/css/styles.css?v=18">
+  <link rel="stylesheet" href="assets/css/styles.css?v=19">
   <link rel="stylesheet" href="assets/css/editor.css?v=6">
   <link rel="stylesheet" href="assets/css/cart.css?v=2">
   <script src="assets/js/main.js?v=18" defer></script>
@@ -302,7 +302,7 @@
     </section>
 
     <section class="section section--bordered">
-      <div class="container split">
+      <div class="container split split--tv">
         <div class="split__content" data-reveal>
           <p class="eyebrow">TechZone TV</p>
           <h2>Your next watch <em>starts here</em>.</h2>
@@ -313,13 +313,21 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
         </div>
-        <figure class="film" data-reveal>
-          <video controls playsinline preload="none" width="478" height="850" poster="assets/img/techzone-ad-poster.jpg" aria-label="TechZone TV and TZ Downloader advertisement">
-            <source src="assets/video/techzone-ad.mp4" type="video/mp4">
-            Your browser cannot play this video. <a href="assets/video/techzone-ad.mp4">Download the TechZone ad</a>.
-          </video>
-          <figcaption>TechZone TV and TZ Downloader — 60-second spot.</figcaption>
-        </figure>
+        <div class="tv-media" data-reveal>
+          <figure class="film">
+            <video controls playsinline preload="none" width="478" height="850" poster="assets/img/techzone-ad-poster.jpg" aria-label="TechZone TV and TZ Downloader advertisement">
+              <source src="assets/video/techzone-ad.mp4" type="video/mp4">
+              Your browser cannot play this video. <a href="assets/video/techzone-ad.mp4">Download the TechZone ad</a>.
+            </video>
+            <figcaption>TechZone TV and TZ Downloader — 60-second spot.</figcaption>
+          </figure>
+          <figure class="poster">
+            <a class="poster__frame" href="assets/img/promo-cruise-2027.jpg" target="_blank" rel="noopener" style="background-image:url('assets/img/promo-cruise-2027.jpg')" aria-label="View the full NARR Adventures Bahamas cruise poster">
+              <img src="assets/img/promo-cruise-2027.jpg" alt="NARR Adventures Bahamas cruise poster: Carnival Mardi Gras, five days August 14 to 19 2027, interior and balcony cabin fares with payment schedule" width="1024" height="1535" loading="lazy" decoding="async">
+            </a>
+            <figcaption>Bahamas cruise · Aug 14–19, 2027 — tap to view full poster.</figcaption>
+          </figure>
+        </div>
       </div>
     </section>
 
