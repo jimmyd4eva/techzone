@@ -758,13 +758,6 @@
     if (!target.closest) return;
     if (target.closest("[data-editor-ui]")) return;
 
-    var tab = target.closest("[data-filter]");
-    if (tab) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-
     var link = target.closest("a");
     if (link) event.preventDefault();
   }

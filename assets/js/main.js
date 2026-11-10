@@ -270,6 +270,7 @@
     function applyFilter(category) {
       var visible = 0;
       activeFilter = category;
+      document.documentElement.setAttribute("data-tz-filter-chosen", category);
 
       document.querySelectorAll("[data-category]").forEach(function (card) {
         if (card.classList.contains("is-managed-source")) {
@@ -315,10 +316,6 @@
         filterButtons.forEach(function (btn) {
           btn.setAttribute("aria-pressed", String(btn === button));
         });
-        document.documentElement.setAttribute(
-          "data-tz-filter-chosen",
-          button.getAttribute("data-filter")
-        );
         applyFilter(button.getAttribute("data-filter"));
         button.scrollIntoView({
           inline: "center",
