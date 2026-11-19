@@ -17,8 +17,8 @@ header('Cache-Control: no-store, max-age=0');
 header('X-Content-Type-Options: nosniff');
 
 const PAGES = ['index.html', 'shop.html', 'software.html', 'about.html', 'contact.html', 'affiliate.html'];
-const SALT_HEX = '301f253b53ebfab900378d30fc9c0c7e';
-const HASH_HEX = 'fb45526f55ca84633bcf5a84e43e8b808d0deece3b74f48f83f94a41d36a121d';
+const SALT_HEX = 'd69d45d0a570dcc717697df4385890bf';
+const HASH_HEX = '80ed399ee38535f1cc9dc1a61fba2513635f1be309fc5078574e52b9802cf790';
 const ITERATIONS = 310000;
 const MAX_BODY = 6000000;
 const MAX_IMAGE_BYTES = 3000000;
