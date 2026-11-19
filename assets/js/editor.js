@@ -662,6 +662,12 @@
     document.documentElement.classList.add("tz-editing");
     document.documentElement.classList.add("has-editor");
 
+    if (onShopPage()) {
+      var productDraft = readProductDraft();
+      addedProducts = productDraft || publishedProducts.slice();
+      renderProducts();
+    }
+
     textItems.forEach(function (el) {
       el.classList.add("tzedit-text");
       el.setAttribute(
@@ -725,6 +731,10 @@
     closeProductDialog();
     hideLinkHandle(true);
     restoreDetails();
+    if (onShopPage()) {
+      addedProducts = publishedProducts.slice();
+      renderProducts();
+    }
     panel.hidden = true;
     launchBtn.hidden = true;
     editorHidden = true;
@@ -2342,14 +2352,6 @@
     var cachedImages = readImageCache();
     if (cachedImages) applyData({ images: cachedImages }, false);
 
-    if (canEdit) {
-      var productDraft = readProductDraft();
-      if (productDraft) {
-        addedProducts = productDraft;
-        renderProducts();
-      }
-    }
-
     withTimeout(loadPublished(), 5000)
       .catch(function () {
         publishedKnown = false;
@@ -2360,7 +2362,7 @@
           applyData(data, false);
           writeImageCache(data.images);
         }
-        if (!hasProductDraft && onShopPage()) {
+        if (onShopPage() && (!editing || !hasProductDraft)) {
           addedProducts = publishedProducts.slice();
           renderProducts();
         }
